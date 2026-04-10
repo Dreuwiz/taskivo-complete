@@ -125,6 +125,7 @@ export default function App() {
   const [users,       setUsers]       = useState([]);
   const [auditLog,    setAuditLog]    = useState([]);
   const [loading,     setLoading]     = useState(true);
+  const [initialDataReady, setInitialDataReady] = useState(false);
   const [settings,    setSettings]    = useState(DEFAULT_SETTINGS);
   const [sidebarVisible, setSidebarVisible] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
@@ -167,11 +168,9 @@ export default function App() {
 
   const fetchInitialData = async () => {
     try {
-      const [t, u, a] = await Promise.all([
-        api.getTasks(),
-        api.getUsers(),
-        api.getAudit(),
-      ]);
+      setInitialDataReady(false);
+
+      const t = await api.getTasks();
       if (t) {
         const merged = mergeWithPending(t);
         console.log("[Taskivo] tasks loaded, first 3:", merged.slice(0, 3).map(x => ({
@@ -179,10 +178,18 @@ export default function App() {
         })));
         setTasks(merged);
       }
-      setUsers(u || []);
-      setAuditLog(a || []);
+      setInitialDataReady(true);
+
+      void api.getUsers()
+        .then(u => setUsers(u || []))
+        .catch(err => console.error("Users load error:", err));
+
+      void api.getAudit()
+        .then(a => setAuditLog(a || []))
+        .catch(err => console.error("Audit load error:", err));
     } catch (err) {
       console.error("Data load error:", err);
+      setInitialDataReady(true);
     }
   };
 
@@ -214,6 +221,10 @@ export default function App() {
     SESSION[mappedR] = session;
     setSessionData(session);
     api.setToken(token);
+    setInitialDataReady(false);
+    setTasks([]);
+    setUsers([]);
+    setAuditLog([]);
     setCurrentUser(user);
     setActivePage("dashboard");
     setTaskFilter("All");
@@ -227,6 +238,7 @@ export default function App() {
     setTasks([]);
     setUsers([]);
     setAuditLog([]);
+    setInitialDataReady(false);
     setActivePage("dashboard");
     setTaskFilter("All");
   };
@@ -418,6 +430,20 @@ export default function App() {
         flex: 1,
         transition: "margin-left 0.3s ease"
       }}>
+        {!initialDataReady && (
+          <div style={{
+            marginBottom: 16,
+            padding: "12px 14px",
+            borderRadius: 10,
+            background: "#eef4ff",
+            border: "1px solid #cfe0ff",
+            color: "#1f5fbf",
+            fontSize: 13,
+            fontWeight: 600,
+          }}>
+            Loading your latest data...
+          </div>
+        )}
         {activePage === "dashboard" && (
           <DashboardPage role={mappedRole} tasks={tasks ?? []} users={users ?? []} sessionData={sessionData} />
         )}

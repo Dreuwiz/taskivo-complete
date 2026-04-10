@@ -12,6 +12,17 @@ export async function login(email, password) {
   return data;
 }
 
+export async function warmServer() {
+  try {
+    await fetch(`${API_URL.replace(/\/api$/, "")}/api/health`, {
+      method: "GET",
+      cache: "no-store",
+    });
+  } catch {
+    // Ignore warmup failures; this is only a best-effort latency improvement.
+  }
+}
+
 // ── Token helpers ─────────────────────────────────────
 export function setToken(token)  { localStorage.setItem("token", token); }
 export function getToken()       { return localStorage.getItem("token"); }

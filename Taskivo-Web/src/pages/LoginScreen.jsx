@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { login } from "../services/api";
+import { useEffect, useState } from "react";
+import { login, warmServer } from "../services/api";
 import { TaskivoLogo } from "../components/ui/TaskivoLogo";
 
 export function LoginScreen({ onLogin }) {
@@ -8,6 +8,10 @@ export function LoginScreen({ onLogin }) {
   const [showPw, setShowPw]     = useState(false);
   const [error, setError]       = useState("");
   const [loading, setLoading]   = useState(false);
+
+  useEffect(() => {
+    warmServer();
+  }, []);
 
   const handleLogin = async () => {
     setError("");
