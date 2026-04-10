@@ -6,7 +6,7 @@ const app = express();
 
 // ── Middleware ─────────────────────────────────────────
 app.use(cors({
-  origin: ["http://localhost:5173", "http://127.0.0.1:5173", "https://your-frontend-domain.vercel.app"], // Add your deployed frontend URL here
+  origin: ["http://localhost:5173", "http://127.0.0.1:5173", "https://taskivo-complete-frontend.onrender.com"], // Add your deployed frontend URL here
   credentials: true
 }));
 app.use((req, res, next) => { console.log("REQUEST:", req.method, req.path); next(); });
