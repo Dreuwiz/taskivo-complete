@@ -3,7 +3,7 @@ import { Modal, Field } from "../ui/Modal";
 import { ROLES } from "../../constants/roles";
 import { inputStyle } from "../../utils/helpers";
 
-const BASE = "http://localhost:3001/api";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001/api";
 
 export function UserModal({ mode, initial, onSave, onClose }) {
   const [form, setForm] = useState(
@@ -30,7 +30,7 @@ export function UserModal({ mode, initial, onSave, onClose }) {
       const token = localStorage.getItem("token");
 
       if (mode === "add") {
-        const res  = await fetch(`${BASE}/users`, {
+        const res  = await fetch(`${API_URL}/users`, {
           method:  "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
           body:    JSON.stringify({
@@ -48,7 +48,7 @@ export function UserModal({ mode, initial, onSave, onClose }) {
         if (!res.ok) { setError(data.error || "Failed to create user."); return; }
         onSave(data);
       } else {
-        const res  = await fetch(`${BASE}/users/${initial.id}`, {
+        const res  = await fetch(`${API_URL}/users/${initial.id}`, {
           method:  "PUT",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
           body:    JSON.stringify({

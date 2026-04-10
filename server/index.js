@@ -6,7 +6,11 @@ const app = express();
 
 // ── Middleware ─────────────────────────────────────────
 app.use(cors({
-  origin: ["http://localhost:5173", "http://127.0.0.1:5173", "https://taskivo-complete-frontend.onrender.com"], // Add your deployed frontend URL here
+  origin: [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "https://taskivo-complete-frontend.onrender.com",
+  ],
   credentials: true
 }));
 app.use((req, res, next) => { console.log("REQUEST:", req.method, req.path); next(); });
@@ -26,4 +30,4 @@ app.use((req, res) => res.status(404).json({ error: "Route not found" }));
 
 // ── Start ──────────────────────────────────────────────
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => console.log(`Taskivo server running on http://localhost:${PORT}`));
+app.listen(PORT, "0.0.0.0", () => console.log(`Taskivo server running on port ${PORT}`));
