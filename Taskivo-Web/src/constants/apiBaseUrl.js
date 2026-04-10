@@ -7,6 +7,7 @@ function getNativeDefaultApiUrl() {
 
   if (platform === "android") {
     // Android emulators reach the host machine through 10.0.2.2, not localhost.
+    // Real phones should set VITE_API_URL to the computer's LAN IP.
     return "http://10.0.2.2:3001/api";
   }
 
