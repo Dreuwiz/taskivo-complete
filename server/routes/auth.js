@@ -5,11 +5,12 @@ const supabase = require("../supabase");
 const auth     = require("../middleware/auth");
 
 const router = express.Router();
+const asyncHandler = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 
 console.log("AUTH ROUTE LOADED");
 
 // ── LOGIN ─────────────────────────────────────────────
-router.post("/login", async (req, res) => {
+router.post("/login", asyncHandler(async (req, res) => {
   console.log("LOGIN ENDPOINT HIT");
   console.log("BODY:", req.body);
 
@@ -54,10 +55,10 @@ router.post("/login", async (req, res) => {
 
   const { password_hash, ...safeUser } = user;
   res.json({ token, user: safeUser });
-});
+}));
 
 // ── REGISTER ──────────────────────────────────────────
-router.post("/register", async (req, res) => {
+router.post("/register", asyncHandler(async (req, res) => {
   const { name, email, password, role } = req.body;
 
   if (!name || !name.trim())   return res.status(400).json({ error: "Full name is required" });
@@ -100,10 +101,10 @@ router.post("/register", async (req, res) => {
   }]);
 
   res.status(201).json({ message: "Account created successfully", user: newUser });
-});
+}));
 
 // ── ME ────────────────────────────────────────────────
-router.get("/me", auth, async (req, res) => {
+router.get("/me", auth, asyncHandler(async (req, res) => {
   const { data: user, error } = await supabase
     .from("users")
     .select("id, name, email, role, team, avatar, streak, status")
@@ -111,6 +112,6 @@ router.get("/me", auth, async (req, res) => {
 
   if (error || !user) return res.status(404).json({ error: "User not found" });
   res.json(user);
-});
+}));
 
 module.exports = router;

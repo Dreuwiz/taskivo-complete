@@ -4,6 +4,7 @@ const auth     = require("../middleware/auth");
 
 const router = express.Router();
 router.use(auth);
+const asyncHandler = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -79,7 +80,7 @@ const toDb = fields => {
 };
 
 // ── GET /api/tasks ────────────────────────────────────────────────────────────
-router.get("/", async (req, res) => {
+router.get("/", asyncHandler(async (req, res) => {
   const { role, name, team } = req.user;
 
   const { data, error } = await supabase
@@ -124,10 +125,10 @@ router.get("/", async (req, res) => {
   }
 
   res.json(tasks.map(normalize));
-});
+}));
 
 // ── POST /api/tasks ───────────────────────────────────────────────────────────
-router.post("/", async (req, res) => {
+router.post("/", asyncHandler(async (req, res) => {
   const { title, assignedTo, assigned_to, team, priority, due, description, subtasks } = req.body;
   if (!title) return res.status(400).json({ error: "Title is required" });
 
@@ -159,10 +160,10 @@ router.post("/", async (req, res) => {
   }]);
 
   res.status(201).json(normalize(data));
-});
+}));
 
 // ── PUT /api/tasks/:id ────────────────────────────────────────────────────────
-router.put("/:id", async (req, res) => {
+router.put("/:id", asyncHandler(async (req, res) => {
   const { id }  = req.params;
   const clean   = toDb(req.body);
 
@@ -186,10 +187,10 @@ router.put("/:id", async (req, res) => {
   }]);
 
   res.json(normalize(data));
-});
+}));
 
 // ── DELETE /api/tasks/:id ─────────────────────────────────────────────────────
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { data: task } = await supabase.from("tasks").select("title").eq("id", id).single();
 
@@ -201,6 +202,6 @@ router.delete("/:id", async (req, res) => {
   }]);
 
   res.json({ success: true });
-});
+}));
 
 module.exports = router;

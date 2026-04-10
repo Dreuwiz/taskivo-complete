@@ -5,9 +5,10 @@ const auth     = require("../middleware/auth");
 
 const router = express.Router();
 router.use(auth);
+const asyncHandler = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 
 // ── GET /api/users ────────────────────────────────────
-router.get("/", async (req, res) => {
+router.get("/", asyncHandler(async (req, res) => {
   const { data, error } = await supabase
     .from("users")
     .select("id, name, email, role, team, avatar, streak, status, created_at")
@@ -15,10 +16,10 @@ router.get("/", async (req, res) => {
 
   if (error) return res.status(500).json({ error: error.message });
   res.json(data);
-});
+}));
 
 // ── POST /api/users  (admin only) ─────────────────────
-router.post("/", async (req, res) => {
+router.post("/", asyncHandler(async (req, res) => {
   if (req.user.role !== "admin")
     return res.status(403).json({ error: "Admin only" });
 
@@ -44,10 +45,10 @@ router.post("/", async (req, res) => {
 
   await supabase.from("audit_log").insert([{ action: `Added user ${name}`, performed_by: req.user.name, type: "success" }]);
   res.status(201).json(data);
-});
+}));
 
 // ── PUT /api/users/:id  (admin only) ──────────────────
-router.put("/:id", async (req, res) => {
+router.put("/:id", asyncHandler(async (req, res) => {
   if (req.user.role !== "admin" && req.user.role !== "manager")
     return res.status(403).json({ error: "Insufficient permissions" });
 
@@ -79,10 +80,10 @@ router.put("/:id", async (req, res) => {
 
   await supabase.from("audit_log").insert([{ action: `Updated user ${data.name}`, performed_by: req.user.name, type: "info" }]);
   res.json(data);
-});
+}));
 
 // ── DELETE /api/users/:id  (admin only) ───────────────
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", asyncHandler(async (req, res) => {
   if (req.user.role !== "admin")
     return res.status(403).json({ error: "Admin only" });
 
@@ -94,6 +95,6 @@ router.delete("/:id", async (req, res) => {
 
   await supabase.from("audit_log").insert([{ action: `Removed user ${user?.name}`, performed_by: req.user.name, type: "danger" }]);
   res.json({ success: true });
-});
+}));
 
 module.exports = router;

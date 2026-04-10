@@ -4,9 +4,10 @@ const auth     = require("../middleware/auth");
 
 const router = express.Router();
 router.use(auth);
+const asyncHandler = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 
 // ── GET /api/audit ────────────────────────────────────
-router.get("/", async (req, res) => {
+router.get("/", asyncHandler(async (req, res) => {
   const { data, error } = await supabase
     .from("audit_log")
     .select("*")
@@ -30,10 +31,10 @@ router.get("/", async (req, res) => {
   });
 
   res.json(formatted);
-});
+}));
 
 // ── POST /api/audit ───────────────────────────────────
-router.post("/", async (req, res) => {
+router.post("/", asyncHandler(async (req, res) => {
   const { action, type } = req.body;
   const { data, error } = await supabase
     .from("audit_log")
@@ -43,6 +44,6 @@ router.post("/", async (req, res) => {
 
   if (error) return res.status(500).json({ error: error.message });
   res.status(201).json(data);
-});
+}));
 
 module.exports = router;
