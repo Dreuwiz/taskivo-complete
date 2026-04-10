@@ -12,10 +12,12 @@ const allowedOrigins = new Set([
 
 const corsOptions = {
   origin(origin, callback) {
+    console.log("[CORS] Origin:", origin || "<none>");
     if (!origin || allowedOrigins.has(origin)) {
       return callback(null, true);
     }
-    return callback(new Error("Not allowed by CORS"));
+    console.warn("[CORS] Blocked origin:", origin);
+    return callback(null, false);
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -26,7 +28,10 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
-app.use((req, res, next) => { console.log("REQUEST:", req.method, req.path); next(); });
+app.use((req, res, next) => {
+  console.log("REQUEST:", req.method, req.path, "Origin:", req.headers.origin || "<none>");
+  next();
+});
 app.use(express.json());
 
 app.use("/api/auth", require("./routes/auth"));
@@ -35,6 +40,12 @@ app.use("/api/users", require("./routes/users"));
 app.use("/api/audit", require("./routes/audit"));
 
 app.get("/api/health", (req, res) => res.json({ status: "ok" }));
+
+app.use((err, req, res, next) => {
+  console.error("[SERVER ERROR]", err);
+  if (res.headersSent) return next(err);
+  res.status(500).json({ error: "Internal server error" });
+});
 
 app.use((req, res) => res.status(404).json({ error: "Route not found" }));
 
