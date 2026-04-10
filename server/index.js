@@ -1,33 +1,42 @@
 require("dotenv").config();
 const express = require("express");
-const cors    = require("cors");
+const cors = require("cors");
 
 const app = express();
 
-// ── Middleware ─────────────────────────────────────────
-app.use(cors({
-  origin: [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "https://taskivo-complete-frontend.onrender.com",
-  ],
-  credentials: true
-}));
+const allowedOrigins = new Set([
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+  "https://taskivo-complete-frontend.onrender.com",
+]);
+
+const corsOptions = {
+  origin(origin, callback) {
+    if (!origin || allowedOrigins.has(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error("Not allowed by CORS"));
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  maxAge: 86400,
+  optionsSuccessStatus: 204,
+};
+
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 app.use((req, res, next) => { console.log("REQUEST:", req.method, req.path); next(); });
 app.use(express.json());
 
-// ── Routes ─────────────────────────────────────────────
-app.use("/api/auth",  require("./routes/auth"));
+app.use("/api/auth", require("./routes/auth"));
 app.use("/api/tasks", require("./routes/tasks"));
 app.use("/api/users", require("./routes/users"));
 app.use("/api/audit", require("./routes/audit"));
 
-// ── Health check ───────────────────────────────────────
 app.get("/api/health", (req, res) => res.json({ status: "ok" }));
 
-// ── 404 fallback ───────────────────────────────────────
 app.use((req, res) => res.status(404).json({ error: "Route not found" }));
 
-// ── Start ──────────────────────────────────────────────
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, "0.0.0.0", () => console.log(`Taskivo server running on port ${PORT}`));

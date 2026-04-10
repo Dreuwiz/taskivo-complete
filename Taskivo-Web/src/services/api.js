@@ -30,10 +30,13 @@ export function getToken()       { return localStorage.getItem("token"); }
 export function clearToken()     { localStorage.removeItem("token"); }
 
 // ── Shared headers ────────────────────────────────────
-const authHeaders = () => ({
-  "Content-Type": "application/json",
-  Authorization: `Bearer ${getToken()}`,
-});
+const authHeaders = (includeJson = false) => {
+  const headers = {
+    Authorization: `Bearer ${getToken()}`,
+  };
+  if (includeJson) headers["Content-Type"] = "application/json";
+  return headers;
+};
 
 // ── Strip undefined values (Supabase/PostgREST rejects them) ──
 const clean = (obj) =>
@@ -69,7 +72,7 @@ export async function createTask(task) {
 
   const res = await fetch(`${API_URL}/tasks`, {
     method: "POST",
-    headers: authHeaders(),
+    headers: authHeaders(true),
     body: JSON.stringify(payload),
   });
 
@@ -104,7 +107,7 @@ export async function updateTask(task) {
 
   const res = await fetch(`${API_URL}/tasks/${payload.id}`, {
     method: "PUT",
-    headers: authHeaders(),
+    headers: authHeaders(true),
     body: JSON.stringify(payload),
   });
 
@@ -139,7 +142,7 @@ export async function getUsers() {
 export async function createUser(user) {
   const res = await fetch(`${API_URL}/users`, {
     method: "POST",
-    headers: authHeaders(),
+    headers: authHeaders(true),
     body: JSON.stringify(user),
   });
   if (!res.ok) throw new Error("Failed to create user");
@@ -149,7 +152,7 @@ export async function createUser(user) {
 export async function updateUser(user) {
   const res = await fetch(`${API_URL}/users/${user.id}`, {
     method: "PUT",
-    headers: authHeaders(),
+    headers: authHeaders(true),
     body: JSON.stringify(user),
   });
   if (!res.ok) throw new Error("Failed to update user");
@@ -175,7 +178,7 @@ export async function getAudit() {
 export async function addAudit({ action, type = "info" }) {
   const res = await fetch(`${API_URL}/audit`, {
     method: "POST",
-    headers: authHeaders(),
+    headers: authHeaders(true),
     body: JSON.stringify({ action, type }),
   });
   if (!res.ok) throw new Error("Failed to add audit log");
