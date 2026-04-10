@@ -3,7 +3,7 @@ import { Modal, Field } from "../ui/Modal";
 import { ROLES } from "../../constants/roles";
 import { inputStyle } from "../../utils/helpers";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001/api";
+import { API_URL } from "../../constants/apiBaseUrl";
 
 export function UserModal({ mode, initial, onSave, onClose }) {
   const [form, setForm] = useState(
