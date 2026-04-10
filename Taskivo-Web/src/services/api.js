@@ -1,4 +1,5 @@
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001/api";
+const IS_DEV = import.meta.env.DEV;
 
 // ── Auth ──────────────────────────────────────────────
 export async function login(email, password) {
@@ -44,12 +45,14 @@ export async function getTasks() {
   if (!res.ok) throw new Error("Failed to fetch tasks");
   const data = await res.json();
 
-  console.log("[API] getTasks returned:", data.map(t => ({
-    id:          t.id,
-    title:       t.title,
-    assignedTo:  t.assignedTo,
-    assigned_to: t.assigned_to,
-  })));
+  if (IS_DEV) {
+    console.log("[API] getTasks returned:", data.map(t => ({
+      id:          t.id,
+      title:       t.title,
+      assignedTo:  t.assignedTo,
+      assigned_to: t.assigned_to,
+    })));
+  }
 
   return data;
 }
@@ -57,10 +60,12 @@ export async function getTasks() {
 export async function createTask(task) {
   const payload = clean(task);
 
-  console.log("[API] createTask payload:", {
-    title:      payload.title,
-    assignedTo: payload.assignedTo,
-  });
+  if (IS_DEV) {
+    console.log("[API] createTask payload:", {
+      title:      payload.title,
+      assignedTo: payload.assignedTo,
+    });
+  }
 
   const res = await fetch(`${API_URL}/tasks`, {
     method: "POST",
@@ -70,11 +75,13 @@ export async function createTask(task) {
 
   const data = await res.json();
 
-  console.log("[API] createTask response:", {
-    id:         data.id,
-    title:      data.title,
-    assignedTo: data.assignedTo,
-  });
+  if (IS_DEV) {
+    console.log("[API] createTask response:", {
+      id:         data.id,
+      title:      data.title,
+      assignedTo: data.assignedTo,
+    });
+  }
 
   if (!res.ok) throw new Error(data.error || "Failed to create task");
   return data;
@@ -83,15 +90,17 @@ export async function createTask(task) {
 export async function updateTask(task) {
   const payload = clean(task);
 
-  console.log("[API] updateTask payload:", {
-    id:                   payload.id,
-    status:               payload.status,
-    teamLeaderReviewed:   payload.teamLeaderReviewed,
-    teamLeaderApprovedBy: payload.teamLeaderApprovedBy,
-    userCompletions:      payload.userCompletions,
-    tlPendingAssignment:  payload.tlPendingAssignment,
-    assignedByManager:    payload.assignedByManager,
-  });
+  if (IS_DEV) {
+    console.log("[API] updateTask payload:", {
+      id:                   payload.id,
+      status:               payload.status,
+      teamLeaderReviewed:   payload.teamLeaderReviewed,
+      teamLeaderApprovedBy: payload.teamLeaderApprovedBy,
+      userCompletions:      payload.userCompletions,
+      tlPendingAssignment:  payload.tlPendingAssignment,
+      assignedByManager:    payload.assignedByManager,
+    });
+  }
 
   const res = await fetch(`${API_URL}/tasks/${payload.id}`, {
     method: "PUT",
@@ -102,7 +111,9 @@ export async function updateTask(task) {
   if (!res.ok) {
     let errBody = "";
     try { errBody = await res.text(); } catch {}
-    console.error("[API] updateTask server error:", res.status, errBody);
+    if (IS_DEV) {
+      console.error("[API] updateTask server error:", res.status, errBody);
+    }
     throw new Error(`Failed to update task: ${res.status} ${errBody}`);
   }
 

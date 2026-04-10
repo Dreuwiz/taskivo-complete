@@ -73,6 +73,7 @@ const serializeTask = (task) => {
 
 // ── localStorage helpers ──────────────────────────────────────────────────────
 const LS_PENDING = "taskivo_pending";
+const LS_BOOTSTRAP_PREFIX = "taskivo_bootstrap_";
 
 const getPending = () => {
   try {
@@ -88,6 +89,37 @@ const getPending = () => {
 const savePending   = (map)  => { try { localStorage.setItem(LS_PENDING, JSON.stringify(map)); } catch {} };
 const addPending    = (task) => { const m = getPending(); m[task.id] = task; savePending(m); };
 const removePending = (id)   => { const m = getPending(); delete m[id]; savePending(m); };
+
+const getBootstrapKey = (userId) => `${LS_BOOTSTRAP_PREFIX}${userId}`;
+
+const getBootstrapCache = (userId) => {
+  if (!userId) return null;
+  try {
+    const raw = JSON.parse(localStorage.getItem(getBootstrapKey(userId)));
+    if (!raw) return null;
+    return {
+      tasks: Array.isArray(raw.tasks) ? raw.tasks.map(normalizeTask) : [],
+      users: Array.isArray(raw.users) ? raw.users : [],
+      auditLog: Array.isArray(raw.auditLog) ? raw.auditLog : [],
+    };
+  } catch {
+    return null;
+  }
+};
+
+const saveBootstrapCache = (userId, data) => {
+  if (!userId) return;
+  const previous = getBootstrapCache(userId) || { tasks: [], users: [], auditLog: [] };
+  const next = {
+    tasks: Array.isArray(data.tasks) ? data.tasks : previous.tasks,
+    users: Array.isArray(data.users) ? data.users : previous.users,
+    auditLog: Array.isArray(data.auditLog) ? data.auditLog : previous.auditLog,
+  };
+
+  try {
+    localStorage.setItem(getBootstrapKey(userId), JSON.stringify(next));
+  } catch {}
+};
 
 const mergeWithPending = (apiTasks) => {
   const pending = getPending();
@@ -160,9 +192,36 @@ export default function App() {
         const merged = mergeWithPending(t);
         console.log("[Taskivo] fetched tasks:", merged.length, "items");
         setTasks(merged);
+        if (currentUser?.id) saveBootstrapCache(currentUser.id, { tasks: merged });
       }
     } catch (err) {
       console.error("refresh tasks failed:", err);
+    }
+  };
+
+  const fetchUsers = async () => {
+    try {
+      const u = await api.getUsers();
+      const nextUsers = u || [];
+      setUsers(nextUsers);
+      if (currentUser?.id) saveBootstrapCache(currentUser.id, { users: nextUsers });
+      return nextUsers;
+    } catch (err) {
+      console.error("Users load error:", err);
+      return [];
+    }
+  };
+
+  const fetchAudit = async () => {
+    try {
+      const a = await api.getAudit();
+      const nextAudit = a || [];
+      setAuditLog(nextAudit);
+      if (currentUser?.id) saveBootstrapCache(currentUser.id, { auditLog: nextAudit });
+      return nextAudit;
+    } catch (err) {
+      console.error("Audit load error:", err);
+      return [];
     }
   };
 
@@ -177,16 +236,13 @@ export default function App() {
           id: x.id, title: x.title, assignedTo: x.assignedTo, assigned_to: x.assigned_to,
         })));
         setTasks(merged);
+        if (currentUser?.id) saveBootstrapCache(currentUser.id, { tasks: merged });
       }
       setInitialDataReady(true);
 
-      void api.getUsers()
-        .then(u => setUsers(u || []))
-        .catch(err => console.error("Users load error:", err));
-
-      void api.getAudit()
-        .then(a => setAuditLog(a || []))
-        .catch(err => console.error("Audit load error:", err));
+      if (role !== "user") {
+        void fetchUsers();
+      }
     } catch (err) {
       console.error("Data load error:", err);
       setInitialDataReady(true);
@@ -214,17 +270,32 @@ export default function App() {
     }
   }, [activePage, currentUser]);
 
+  useEffect(() => {
+    if (!currentUser) return;
+    if (role !== "user" && users.length === 0) {
+      void fetchUsers();
+    }
+  }, [currentUser, role]);
+
+  useEffect(() => {
+    if (!currentUser) return;
+    if (activePage === "system_settings" && auditLog.length === 0) {
+      void fetchAudit();
+    }
+  }, [activePage, currentUser, auditLog.length]);
+
   const handleLogin = (token, user) => {
     if (!token || !user) { console.error("❌ handleLogin received invalid data"); return; }
     const mappedR = ROLE_MAP[user.role] || "user";
     const session = { id: user.id, name: user.name, team: user.team, streak: user.streak };
+    const cached = getBootstrapCache(user.id);
     SESSION[mappedR] = session;
     setSessionData(session);
     api.setToken(token);
-    setInitialDataReady(false);
-    setTasks([]);
-    setUsers([]);
-    setAuditLog([]);
+    setInitialDataReady(!!cached?.tasks?.length);
+    setTasks(cached?.tasks || []);
+    setUsers(cached?.users || []);
+    setAuditLog(cached?.auditLog || []);
     setCurrentUser(user);
     setActivePage("dashboard");
     setTaskFilter("All");
