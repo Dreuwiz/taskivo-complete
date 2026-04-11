@@ -1,11 +1,20 @@
+import { useEffect, useState } from "react";
 import { Card, SectionTitle, PageHeader } from "../components/ui/index";
 
 // ── Sub-components defined OUTSIDE to avoid remount on every render ──
 
-function ToggleRow({ label, desc, cfgKey, settings, onToggle }) {
+function ToggleRow({ label, desc, cfgKey, settings, onToggle, compact = false }) {
   const isOn = settings[cfgKey];
   return (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "13px 0", borderBottom: "1px solid #f0f0f0" }}>
+    <div style={{
+      display: "flex",
+      flexDirection: compact ? "column" : "row",
+      justifyContent: "space-between",
+      alignItems: compact ? "flex-start" : "center",
+      gap: compact ? 12 : 16,
+      padding: "13px 0",
+      borderBottom: "1px solid #f0f0f0"
+    }}>
       <div>
         <p style={{ margin: 0, fontWeight: 600, fontSize: 14, color: "#1a1a1a" }}>{label}</p>
         <p style={{ margin: "2px 0 0", fontSize: 12, color: "#888" }}>{desc}</p>
@@ -20,10 +29,17 @@ function ToggleRow({ label, desc, cfgKey, settings, onToggle }) {
   );
 }
 
-function SliderRow({ label, desc, cfgKey, min, max, suffix = "", settings, onUpdate }) {
+function SliderRow({ label, desc, cfgKey, min, max, suffix = "", settings, onUpdate, compact = false }) {
   return (
     <div style={{ padding: "13px 0", borderBottom: "1px solid #f0f0f0" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+      <div style={{
+        display: "flex",
+        flexDirection: compact ? "column" : "row",
+        justifyContent: "space-between",
+        alignItems: compact ? "flex-start" : "stretch",
+        gap: compact ? 8 : 16,
+        marginBottom: 8
+      }}>
         <div>
           <p style={{ margin: 0, fontWeight: 600, fontSize: 14, color: "#1a1a1a" }}>{label}</p>
           <p style={{ margin: "2px 0 0", fontSize: 12, color: "#888" }}>{desc}</p>
@@ -41,9 +57,17 @@ function SliderRow({ label, desc, cfgKey, min, max, suffix = "", settings, onUpd
   );
 }
 
-function SelectRow({ label, desc, cfgKey, options, settings, onUpdate }) {
+function SelectRow({ label, desc, cfgKey, options, settings, onUpdate, compact = false }) {
   return (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "13px 0", borderBottom: "1px solid #f0f0f0" }}>
+    <div style={{
+      display: "flex",
+      flexDirection: compact ? "column" : "row",
+      justifyContent: "space-between",
+      alignItems: compact ? "flex-start" : "center",
+      gap: compact ? 12 : 16,
+      padding: "13px 0",
+      borderBottom: "1px solid #f0f0f0"
+    }}>
       <div>
         <p style={{ margin: 0, fontWeight: 600, fontSize: 14, color: "#1a1a1a" }}>{label}</p>
         <p style={{ margin: "2px 0 0", fontSize: 12, color: "#888" }}>{desc}</p>
@@ -51,7 +75,18 @@ function SelectRow({ label, desc, cfgKey, options, settings, onUpdate }) {
       <select
         value={settings[cfgKey]}
         onChange={e => onUpdate(cfgKey, e.target.value, label, `${label} changed to "${e.target.value}"`)}
-        style={{ padding: "6px 10px", borderRadius: 8, border: "1px solid #ddd", fontSize: 13, color: "#1a1a1a", backgroundColor: "white", cursor: "pointer", outline: "none" }}
+        style={{
+          width: compact ? "100%" : "auto",
+          maxWidth: "100%",
+          padding: "6px 10px",
+          borderRadius: 8,
+          border: "1px solid #ddd",
+          fontSize: 13,
+          color: "#1a1a1a",
+          backgroundColor: "white",
+          cursor: "pointer",
+          outline: "none"
+        }}
       >
         {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
       </select>
@@ -62,6 +97,14 @@ function SelectRow({ label, desc, cfgKey, options, settings, onUpdate }) {
 // ────────────────────────────────────────────────────────────────────
 
 export function SystemSettingsPage({ auditLog, onAuditAdd, users, tasks, settings, onSettingsChange }) {
+  const [isCompact, setIsCompact] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => setIsCompact(window.innerWidth <= 900);
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   const update = (key, value, label, logMsg) => {
     onSettingsChange(prev => ({ ...prev, [key]: value }));
@@ -75,12 +118,18 @@ export function SystemSettingsPage({ auditLog, onAuditAdd, users, tasks, setting
   };
 
   const logColor = { danger: "#c0392b", info: "#2386ff", success: "#27ae60", warning: "#c47b00" };
-  const sharedProps = { settings, onToggle: toggle, onUpdate: update };
+  const sharedProps = { settings, onToggle: toggle, onUpdate: update, compact: isCompact };
 
   return (
     <div>
       <PageHeader title="System Settings" subtitle="Configure global system behavior — Admin only" />
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, maxWidth: "100%" }}>
+      <div style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))",
+        gap: 20,
+        alignItems: "start",
+        maxWidth: "100%"
+      }}>
 
         {/* Task Settings */}
         <Card>
@@ -131,7 +180,7 @@ export function SystemSettingsPage({ auditLog, onAuditAdd, users, tasks, setting
         </Card>
 
         {/* Audit Log */}
-        <Card style={{ gridColumn: "1 / -1" }}>
+        <Card style={{ gridColumn: "1 / -1", minWidth: 0 }}>
           <SectionTitle icon="📝">Audit Log</SectionTitle>
           {auditLog.length === 0 ? (
             <p style={{ fontSize: 13, color: "#aaa", textAlign: "center", padding: "20px 0" }}>No activity recorded yet.</p>
