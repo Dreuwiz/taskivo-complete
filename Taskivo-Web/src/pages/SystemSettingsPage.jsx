@@ -125,7 +125,7 @@ export function SystemSettingsPage({ auditLog, onAuditAdd, users, tasks, setting
       <PageHeader title="System Settings" subtitle="Configure global system behavior — Admin only" />
       <div style={{
         display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))",
+        gridTemplateColumns: isCompact ? "1fr" : "minmax(0, 1fr) minmax(0, 1fr)",
         gap: 20,
         alignItems: "start",
         maxWidth: "100%"
