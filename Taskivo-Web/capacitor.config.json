@@ -9,6 +9,6 @@
     }
   },
   "server": {
-    "androidScheme": "https"
+    "androidScheme": "http"
   }
 }
