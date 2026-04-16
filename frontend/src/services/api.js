@@ -1,19 +1,42 @@
 import { API_URL } from "../constants/apiBaseUrl";
 
 const IS_DEV = import.meta.env.DEV;
+const HEALTH_URL = `${API_URL.replace(/\/api$/, "")}/api/health`;
+const IS_RENDER_API = /onrender\.com/i.test(API_URL);
 
-// ── Auth ──────────────────────────────────────────────
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function fetchWithTimeout(url, options = {}, timeoutMs = 15000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export async function login(email, password) {
   let res;
   try {
-    res = await fetch(`${API_URL}/auth/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: email.trim(), password: password.trim() }),
-    });
+    res = await fetchWithTimeout(
+      `${API_URL}/auth/login`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim(), password: password.trim() }),
+      },
+      IS_RENDER_API ? 30000 : 15000
+    );
   } catch (err) {
+    const isTimeout = err?.name === "AbortError";
     throw new Error(
-      `Cannot reach the backend at ${API_URL}. Check your phone network, backend server, and CORS settings.`
+      isTimeout && IS_RENDER_API
+        ? "The backend is taking too long to respond. It may be waking up on Render. Please try again in a few seconds."
+        : `Cannot reach the backend at ${API_URL}. Check your network, backend server, and CORS settings.`
     );
   }
 
@@ -29,22 +52,39 @@ export async function login(email, password) {
 }
 
 export async function warmServer() {
-  try {
-    await fetch(`${API_URL.replace(/\/api$/, "")}/api/health`, {
-      method: "GET",
-      cache: "no-store",
-    });
-  } catch {
-    // Ignore warmup failures; this is only a best-effort latency improvement.
+  const attempts = IS_RENDER_API ? 3 : 1;
+
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    try {
+      await fetchWithTimeout(
+        HEALTH_URL,
+        {
+          method: "GET",
+          cache: "no-store",
+        },
+        IS_RENDER_API ? 20000 : 10000
+      );
+      return;
+    } catch {
+      if (attempt < attempts - 1) {
+        await sleep(2000);
+      }
+    }
   }
 }
 
-// ── Token helpers ─────────────────────────────────────
-export function setToken(token)  { localStorage.setItem("token", token); }
-export function getToken()       { return localStorage.getItem("token"); }
-export function clearToken()     { localStorage.removeItem("token"); }
+export function setToken(token) {
+  localStorage.setItem("token", token);
+}
 
-// ── Shared headers ────────────────────────────────────
+export function getToken() {
+  return localStorage.getItem("token");
+}
+
+export function clearToken() {
+  localStorage.removeItem("token");
+}
+
 const authHeaders = (includeJson = false) => {
   const headers = {
     Authorization: `Bearer ${getToken()}`,
@@ -53,21 +93,19 @@ const authHeaders = (includeJson = false) => {
   return headers;
 };
 
-// ── Strip undefined values (Supabase/PostgREST rejects them) ──
 const clean = (obj) =>
   Object.fromEntries(Object.entries(obj).filter(([_, v]) => v !== undefined));
 
-// ── Tasks ─────────────────────────────────────────────
 export async function getTasks() {
   const res = await fetch(`${API_URL}/tasks`, { headers: authHeaders() });
   if (!res.ok) throw new Error("Failed to fetch tasks");
   const data = await res.json();
 
   if (IS_DEV) {
-    console.log("[API] getTasks returned:", data.map(t => ({
-      id:          t.id,
-      title:       t.title,
-      assignedTo:  t.assignedTo,
+    console.log("[API] getTasks returned:", data.map((t) => ({
+      id: t.id,
+      title: t.title,
+      assignedTo: t.assignedTo,
       assigned_to: t.assigned_to,
     })));
   }
@@ -80,7 +118,7 @@ export async function createTask(task) {
 
   if (IS_DEV) {
     console.log("[API] createTask payload:", {
-      title:      payload.title,
+      title: payload.title,
       assignedTo: payload.assignedTo,
     });
   }
@@ -95,8 +133,8 @@ export async function createTask(task) {
 
   if (IS_DEV) {
     console.log("[API] createTask response:", {
-      id:         data.id,
-      title:      data.title,
+      id: data.id,
+      title: data.title,
       assignedTo: data.assignedTo,
     });
   }
@@ -110,13 +148,13 @@ export async function updateTask(task) {
 
   if (IS_DEV) {
     console.log("[API] updateTask payload:", {
-      id:                   payload.id,
-      status:               payload.status,
-      teamLeaderReviewed:   payload.teamLeaderReviewed,
+      id: payload.id,
+      status: payload.status,
+      teamLeaderReviewed: payload.teamLeaderReviewed,
       teamLeaderApprovedBy: payload.teamLeaderApprovedBy,
-      userCompletions:      payload.userCompletions,
-      tlPendingAssignment:  payload.tlPendingAssignment,
-      assignedByManager:    payload.assignedByManager,
+      userCompletions: payload.userCompletions,
+      tlPendingAssignment: payload.tlPendingAssignment,
+      assignedByManager: payload.assignedByManager,
     });
   }
 
@@ -128,7 +166,9 @@ export async function updateTask(task) {
 
   if (!res.ok) {
     let errBody = "";
-    try { errBody = await res.text(); } catch {}
+    try {
+      errBody = await res.text();
+    } catch {}
     if (IS_DEV) {
       console.error("[API] updateTask server error:", res.status, errBody);
     }
@@ -147,7 +187,6 @@ export async function deleteTask(id) {
   return res.json();
 }
 
-// ── Users ─────────────────────────────────────────────
 export async function getUsers() {
   const res = await fetch(`${API_URL}/users`, { headers: authHeaders() });
   if (!res.ok) throw new Error("Failed to fetch users");
@@ -183,7 +222,6 @@ export async function deleteUser(id) {
   return res.json();
 }
 
-// ── Audit ─────────────────────────────────────────────
 export async function getAudit() {
   const res = await fetch(`${API_URL}/audit`, { headers: authHeaders() });
   if (!res.ok) throw new Error("Failed to fetch audit log");
@@ -200,7 +238,6 @@ export async function addAudit({ action, type = "info" }) {
   return res.json();
 }
 
-// ── Me ────────────────────────────────────────────────
 export async function getMe() {
   const token = getToken();
   if (!token) return null;
