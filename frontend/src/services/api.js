@@ -4,12 +4,26 @@ const IS_DEV = import.meta.env.DEV;
 
 // ── Auth ──────────────────────────────────────────────
 export async function login(email, password) {
-  const res = await fetch(`${API_URL}/auth/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email: email.trim(), password: password.trim() }),
-  });
-  const data = await res.json();
+  let res;
+  try {
+    res = await fetch(`${API_URL}/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: email.trim(), password: password.trim() }),
+    });
+  } catch (err) {
+    throw new Error(
+      `Cannot reach the backend at ${API_URL}. Check your phone network, backend server, and CORS settings.`
+    );
+  }
+
+  let data = {};
+  try {
+    data = await res.json();
+  } catch {
+    data = {};
+  }
+
   if (!res.ok) throw new Error(data.error || "Login failed");
   return data;
 }

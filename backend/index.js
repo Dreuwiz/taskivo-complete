@@ -8,15 +8,39 @@ const allowedOrigins = new Set([
   "http://localhost:5173",
   "http://127.0.0.1:5173",
   "http://localhost",
+  "http://localhost:3000",
   "https://localhost",
+  "https://localhost:3000",
   "capacitor://localhost",
   "https://taskivo-complete-frontend.onrender.com",
 ]);
 
+function isAllowedOrigin(origin) {
+  if (!origin || origin === "null") return true;
+  if (allowedOrigins.has(origin)) return true;
+
+  try {
+    const parsed = new URL(origin);
+    const isHttp = parsed.protocol === "http:" || parsed.protocol === "https:";
+    const isLocalhost =
+      parsed.hostname === "localhost" ||
+      parsed.hostname === "127.0.0.1" ||
+      parsed.hostname === "::1";
+    const isPrivateLan =
+      /^192\.168\.\d+\.\d+$/.test(parsed.hostname) ||
+      /^10\.\d+\.\d+\.\d+$/.test(parsed.hostname) ||
+      /^172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+$/.test(parsed.hostname);
+
+    return isHttp && (isLocalhost || isPrivateLan);
+  } catch {
+    return false;
+  }
+}
+
 const corsOptions = {
   origin(origin, callback) {
     console.log("[CORS] Origin:", origin || "<none>");
-    if (!origin || allowedOrigins.has(origin)) {
+    if (isAllowedOrigin(origin)) {
       return callback(null, true);
     }
     console.warn("[CORS] Blocked origin:", origin);
