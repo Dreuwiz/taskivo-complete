@@ -2,8 +2,8 @@
 
 ## Overview
 ```
-Taskivo-Web/          ← your existing Vite React project
-server/               ← new Node.js/Express backend (put this alongside Taskivo-Web)
+frontend/             ← your existing Vite React project
+backend/              ← new Node.js/Express backend (put this alongside frontend)
 ```
 
 ---
@@ -19,8 +19,8 @@ server/               ← new Node.js/Express backend (put this alongside Taskiv
 ## Step 2 — Backend Setup
 
 ```bash
-# Place the server/ folder alongside your Taskivo-Web folder, then:
-cd server
+# Place the backend/ folder alongside your frontend/ folder, then:
+cd backend
 npm install
 ```
 
@@ -37,7 +37,7 @@ PORT=3001
 ## Step 3 — Generate Password Hashes for Seed Data
 
 ```bash
-cd server
+cd backend
 node scripts/hashPasswords.js
 ```
 
@@ -47,7 +47,7 @@ Copy each hash into `supabase_schema.sql`, replacing the placeholder `$2b$10$You
 
 ## Step 4 — Frontend Setup
 
-1. Copy these files into your `Taskivo-Web/src/` folder:
+1. Copy these files into your `frontend/src/` folder:
    - `src-updates/App.jsx`              → replaces `src/App.jsx`
    - `src-updates/pages/LoginScreen.jsx` → replaces `src/pages/LoginScreen.jsx`
    - `src-updates/pages/AnalyticsPage.jsx` → replaces `src/pages/AnalyticsPage.jsx`
@@ -55,7 +55,7 @@ Copy each hash into `supabase_schema.sql`, replacing the placeholder `$2b$10$You
 
 2. Install Google Charts for React:
 ```bash
-cd Taskivo-Web
+cd frontend
 npm install react-google-charts
 ```
 
@@ -65,14 +65,14 @@ npm install react-google-charts
 
 **Terminal 1 — Backend:**
 ```bash
-cd server
+cd backend
 npm run dev
 ```
 Server runs at: http://localhost:3001
 
 **Terminal 2 — Frontend:**
 ```bash
-cd Taskivo-Web
+cd frontend
 npm run dev
 ```
 App runs at: http://localhost:5173

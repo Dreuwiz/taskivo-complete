@@ -1,5 +1,5 @@
 // Run this once to generate bcrypt hashes for seed users:
-//   cd server && node scripts/hashPasswords.js
+//   cd backend && node scripts/hashPasswords.js
 //
 // Then copy the hashes into supabase_schema.sql
 

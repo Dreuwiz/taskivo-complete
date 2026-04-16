@@ -71,7 +71,7 @@ INSERT INTO users (name, email, password_hash, role, team, avatar, streak, statu
   ('Grace Ko',     'grace@taskivo.com', '$2b$10$hdcH6GX3jgvf5TjDr01xre.HOBp2E1m0LiYQdOvWTLs9ZvHAhIXwi', 'admin',       NULL,    'GK', 14, 'Active');
   ('Shadow',       'shadow@taskivo.com','$2b$10$Jm1HKN46UCVj8xi2VgY.fu02jiskPntkNOY9ClPgNn7qxhLeqYnUO', 'user',        'Alpha', 'S' , 0,  'Active')
 
--- NOTE: Run `node server/scripts/hashPasswords.js` first to get real bcrypt hashes,
+-- NOTE: Run `node backend/scripts/hashPasswords.js` first to get real bcrypt hashes,
 -- then replace the placeholder hashes above before inserting.
 
 INSERT INTO tasks (title, assigned_to, team, status, priority, due) VALUES

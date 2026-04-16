@@ -1,5 +1,5 @@
 {
-  "name": "taskivo-server",
+  "name": "taskivo-backend",
   "version": "1.0.0",
   "description": "Taskivo Express + Supabase backend",
   "main": "index.js",
