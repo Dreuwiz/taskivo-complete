@@ -107,7 +107,7 @@ const RESPONSES = {
 
   // ── Admin ─────────────────────────────────────────────────────────────────────
   manage_users: {
-    text: "To manage users:\n1. Go to User Management Tab\n2. View all registered users and their roles\n3. You can edit user details, reset passwords, or deactivate accounts\n4. Use the search bar to find a specific user quickly",
+    text: "To manage users:\n1. Go to User Management Tab\n2. View all registered users and their roles\n3. Use Edit to update details, assign roles, or set a temporary password for password resets\n4. Use the search bar to find a specific user quickly",
     suggestions: ["How do I assign roles?", "How do I remove a user?"],
   },
   assign_roles: {
@@ -127,7 +127,7 @@ const RESPONSES = {
     suggestions: ["How do I manage users?", "How do I assign roles?"],
   },
   faq_admin: {
-    text: "Admin FAQ:\n\n❓ Can I reset a user's password?\nYes — go to Users, select the user, and click 'Reset Password'.\n\n❓ Can I change XP thresholds for leveling?\nYes — update them in Settings → Leveling Config.\n\n❓ Can I see all chat/activity logs?\nYes — the Activity Log shows all system-wide actions.\n\n❓ Can I create another Admin?\nYes — assign the Admin role to any user from the Users panel.",
+    text: "Admin FAQ:\n\n❓ Can I reset a user's password?\nYes — go to Users, edit the user, enter a temporary password in the Reset Password field, and save.\n\n❓ Can I change XP thresholds for leveling?\nYes — update them in Settings → Leveling Config.\n\n❓ Can I see all chat/activity logs?\nYes — the Activity Log shows all system-wide actions.\n\n❓ Can I create another Admin?\nYes — assign the Admin role to any user from the Users panel.",
     suggestions: ["How do I manage users?", "How do I configure settings?"],
   },
 

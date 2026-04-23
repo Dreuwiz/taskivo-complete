@@ -21,6 +21,8 @@ export function UserModal({ mode, initial, onSave, onClose }) {
     if (!form.email.trim()) return setError("Email is required.");
     if (mode === "add" && form.password.length < 6)
       return setError("Password must be at least 6 characters.");
+    if (mode === "edit" && form.password && form.password.length < 6)
+      return setError("New password must be at least 6 characters.");
 
     const noTeam = form.role === "manager" || form.role === "admin";
     const avatar = form.name.trim().split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2);
@@ -54,6 +56,7 @@ export function UserModal({ mode, initial, onSave, onClose }) {
           body:    JSON.stringify({
             name:   form.name.trim(),
             email:  form.email.trim(),
+            ...(form.password ? { password: form.password } : {}),
             role:   form.role,
             team:   noTeam ? null : form.team,
             status: form.status,
@@ -101,6 +104,27 @@ export function UserModal({ mode, initial, onSave, onClose }) {
               <i className={showPw?"fa-solid fa-eye-slash":"fa-solid fa-eye"}/>
             </button>
           </div>
+        </Field>
+      )}
+
+      {mode === "edit" && (
+        <Field label="Reset Password">
+          <div style={{ position:"relative" }}>
+            <input
+              type={showPw ? "text" : "password"}
+              style={{ ...inputStyle, paddingRight:40 }}
+              value={form.password || ""}
+              onChange={set("password")}
+              placeholder="Leave blank to keep current password"
+            />
+            <button onClick={() => setShowPw(p=>!p)} type="button"
+              style={{ position:"absolute", right:10, top:"50%", transform:"translateY(-50%)", background:"none", border:"none", cursor:"pointer", color:"#bbb", fontSize:13 }}>
+              <i className={showPw?"fa-solid fa-eye-slash":"fa-solid fa-eye"}/>
+            </button>
+          </div>
+          <p style={{ margin:"6px 0 0", fontSize:11, color:"#888" }}>
+            Enter a temporary password only when the user needs a reset.
+          </p>
         </Field>
       )}
 

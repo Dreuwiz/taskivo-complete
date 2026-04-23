@@ -106,3 +106,17 @@ App runs at: http://localhost:5173
 | dan@taskivo.com     | dan123     | Team Leader  |
 | frank@taskivo.com   | frank123   | Manager      |
 | grace@taskivo.com   | grace123   | Admin        |
+
+---
+
+## Password Reset Process
+
+Taskivo currently uses an admin-managed password reset flow.
+
+1. A user who forgot their password contacts an Admin or Manager.
+2. In `User Management`, open the user in edit mode.
+3. Enter a temporary password in the `Reset Password` field.
+4. Save the user record.
+5. Share the temporary password with the user so they can sign in.
+
+There is no self-serve "Forgot Password" email flow in this project yet.
