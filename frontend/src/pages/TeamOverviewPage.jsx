@@ -1,6 +1,17 @@
 import { SESSION, ROLES } from "../constants/roles";
 import { Avatar, Badge, Card, SectionTitle, PageHeader } from "../components/ui/index";
 
+const isTaskAssignedToUser = (task, user) => {
+  const assignedUserIds = Array.isArray(task.assignedUserIds)
+    ? task.assignedUserIds
+    : [task.assigned_user_id].filter((id) => Number.isInteger(id));
+  const assignees = Array.isArray(task.assignedTo)
+    ? task.assignedTo
+    : [task.assignedTo ?? task.assigned_to].filter(Boolean);
+
+  return assignedUserIds.includes(user.id) || assignees.some(name => name === user.name);
+};
+
 export function TeamOverviewPage({ role, tasks, users, onUpdateTask }) {
   const session = SESSION[role];
 
@@ -15,7 +26,7 @@ export function TeamOverviewPage({ role, tasks, users, onUpdateTask }) {
       <PageHeader title="Team Overview" subtitle={`Team ${session.team} — your direct reports`}/>
       <div className="grid-responsive" style={{ maxWidth:"100%", marginBottom:30 }}>
         {members.map(u => {
-          const ut   = tasks.filter(t => (t.assignedTo===u.name || t.assigned_to===u.name));
+          const ut   = tasks.filter(t => isTaskAssignedToUser(t, u));
           const done = ut.filter(t => t.status==="Completed").length;
           const pct  = ut.length ? Math.round((done/ut.length)*100) : 0;
           return (

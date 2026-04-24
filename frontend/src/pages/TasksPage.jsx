@@ -31,6 +31,27 @@ const getNames = t => {
   return [];
 };
 
+const getAssignedUserIds = (t) => {
+  const raw = t.assignedUserIds ?? t.assigned_user_ids ?? t.assigned_user_id ?? null;
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw.map(Number).filter(Number.isInteger);
+  if (typeof raw === "number") return Number.isInteger(raw) ? [raw] : [];
+  if (typeof raw === "string") {
+    const trimmed = raw.trim();
+    if (trimmed.startsWith("[")) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        return Array.isArray(parsed) ? parsed.map(Number).filter(Number.isInteger) : [];
+      } catch {
+        return [];
+      }
+    }
+    const parsed = Number(trimmed);
+    return Number.isInteger(parsed) ? [parsed] : [];
+  }
+  return [];
+};
+
 const getTeam = t => t.team || null;
 const getDesc = t => t.description || "";
 const getSubs = t => t.subtasks || [];
@@ -43,12 +64,19 @@ const countDone          = t => getNames(t).filter(n => isUserDone(t, n)).length
 // ── TL-pending-assignment helpers ─────────────────────────────────────────────
 const isTLPendingTask = (t, session) =>
   t.tlPendingAssignment === true &&
-  getNames(t).some(n => n?.toLowerCase().trim() === session?.name?.toLowerCase().trim());
+  (
+    getAssignedUserIds(t).includes(session?.id) ||
+    getNames(t).some(n => n?.toLowerCase().trim() === session?.name?.toLowerCase().trim())
+  );
 
 // ── Effective team resolution ─────────────────────────────────────────────────
 const getEffectiveTeam = (t, users) => {
   if (t.team) return t.team;
   if (!users || !users.length) return null;
+  for (const id of getAssignedUserIds(t)) {
+    const u = users.find((user) => user.id === id);
+    if (u?.team && !isLeaderRole(u)) return u.team;
+  }
   for (const name of getNames(t)) {
     const u = users.find(u => u.name?.toLowerCase().trim() === name?.toLowerCase().trim());
     if (u?.team && !isLeaderRole(u)) return u.team;
@@ -102,6 +130,7 @@ function TLAssignmentPanel({ task, session, users, onAssigned }) {
     const updated = {
       ...task,
       assignedTo:          selected,
+      assignedUserIds:     teamMembers.filter((u) => selected.includes(u.name)).map((u) => u.id),
       tlPendingAssignment: false,
       tlAssignedBy:        session.name,
       tlAssignedAt:        new Date().toISOString(),

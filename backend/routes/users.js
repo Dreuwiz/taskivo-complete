@@ -7,6 +7,79 @@ const router = express.Router();
 router.use(auth);
 const asyncHandler = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 
+const parseAssignedTo = (value) => {
+  if (!value && value !== "") return [];
+  if (Array.isArray(value)) return value.map(String).filter(Boolean);
+  const raw = String(value).trim();
+  if (!raw) return [];
+  if (raw.startsWith("[")) {
+    try {
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed.map(String).filter(Boolean) : [raw];
+    } catch { /* fall through */ }
+  }
+  if (raw.includes(",")) return raw.split(",").map((s) => s.trim()).filter(Boolean);
+  return [raw];
+};
+
+const formatAssignedValue = (value) => {
+  if (Array.isArray(value)) {
+    return value.length === 1 ? value[0] : JSON.stringify(value);
+  }
+  return value || "";
+};
+
+const renameObjectKey = (source, oldKey, newKey) => {
+  const entries = Object.entries(source || {});
+  let changed = false;
+  const next = {};
+
+  entries.forEach(([key, value]) => {
+    const targetKey = key === oldKey ? newKey : key;
+    if (targetKey !== key) changed = true;
+    next[targetKey] = value;
+  });
+
+  return { value: next, changed };
+};
+
+const renameTaskReferences = (task, oldName, newName) => {
+  const patch = {};
+  let changed = false;
+
+  const assignedNames = parseAssignedTo(task.assigned_to);
+  if (assignedNames.includes(oldName)) {
+    patch.assigned_to = formatAssignedValue(assignedNames.map((name) => (name === oldName ? newName : name)));
+    changed = true;
+  }
+
+  const completions = renameObjectKey(task.userCompletions ?? task.user_completions ?? {}, oldName, newName);
+  if (completions.changed) {
+    patch.userCompletions = completions.value;
+    changed = true;
+  }
+
+  const subtasks = (task.subtasks || []).map((subtask) => {
+    const renamed = renameObjectKey(subtask.userDone || {}, oldName, newName);
+    if (!renamed.changed) return subtask;
+    changed = true;
+    return { ...subtask, userDone: renamed.value };
+  });
+
+  if (changed) {
+    patch.subtasks = subtasks;
+  }
+
+  ["assignedByManager", "tlAssignedBy", "teamLeaderApprovedBy", "reviewedBy", "rejectedBy"].forEach((field) => {
+    if (task[field] === oldName) {
+      patch[field] = newName;
+      changed = true;
+    }
+  });
+
+  return changed ? patch : null;
+};
+
 // ── GET /api/users ────────────────────────────────────
 router.get("/", asyncHandler(async (req, res) => {
   const { data, error } = await supabase
@@ -53,6 +126,14 @@ router.put("/:id", asyncHandler(async (req, res) => {
     return res.status(403).json({ error: "Insufficient permissions" });
 
   const { id }  = req.params;
+  const { data: existingUser, error: existingUserError } = await supabase
+    .from("users")
+    .select("id, name")
+    .eq("id", id)
+    .single();
+
+  if (existingUserError) return res.status(500).json({ error: existingUserError.message });
+
   const fields  = { ...req.body };
   delete fields.id;
   delete fields.created_at;
@@ -77,6 +158,26 @@ router.put("/:id", asyncHandler(async (req, res) => {
     .single();
 
   if (error) return res.status(500).json({ error: error.message });
+
+  if (existingUser?.name && data.name && existingUser.name !== data.name) {
+    const { data: tasks, error: tasksError } = await supabase
+      .from("tasks")
+      .select("*");
+
+    if (tasksError) return res.status(500).json({ error: tasksError.message });
+
+    for (const task of tasks || []) {
+      const patch = renameTaskReferences(task, existingUser.name, data.name);
+      if (!patch) continue;
+
+      const { error: taskUpdateError } = await supabase
+        .from("tasks")
+        .update(patch)
+        .eq("id", task.id);
+
+      if (taskUpdateError) return res.status(500).json({ error: taskUpdateError.message });
+    }
+  }
 
   await supabase.from("audit_log").insert([{ action: `Updated user ${data.name}`, performed_by: req.user.name, type: "info" }]);
   res.json(data);

@@ -30,7 +30,9 @@ const DEFAULT_SETTINGS = {
 // ── Normalize assignedTo ──────────────────────────────────────────────────────
 const normalizeTask = (t) => {
   const raw = t.assignedTo ?? t.assigned_to ?? null;
+  const rawIds = t.assignedUserIds ?? t.assigned_user_ids ?? t.assigned_user_id ?? null;
   let assignedTo = [];
+  let assignedUserIds = [];
 
   if (Array.isArray(raw)) {
     assignedTo = raw.filter(Boolean);
@@ -52,19 +54,44 @@ const normalizeTask = (t) => {
     }
   }
 
+  if (Array.isArray(rawIds)) {
+    assignedUserIds = rawIds.map(Number).filter(Number.isInteger);
+  } else if (typeof rawIds === "number") {
+    assignedUserIds = Number.isInteger(rawIds) ? [rawIds] : [];
+  } else if (typeof rawIds === "string") {
+    const trimmed = rawIds.trim();
+    if (trimmed.startsWith("[")) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        assignedUserIds = Array.isArray(parsed)
+          ? parsed.map(Number).filter(Number.isInteger)
+          : [];
+      } catch {
+        assignedUserIds = [];
+      }
+    } else {
+      const parsed = Number(trimmed);
+      assignedUserIds = Number.isInteger(parsed) ? [parsed] : [];
+    }
+  }
+
   return {
     ...t,
     assignedTo,
     assigned_to: assignedTo[0] || "",
+    assignedUserIds,
+    assigned_user_id: assignedUserIds[0] ?? null,
   };
 };
 
 // ── Prepare task payload for the API ─────────────────────────────────────────
 const serializeTask = (task) => {
   const names = Array.isArray(task.assignedTo) ? task.assignedTo : [];
+  const assignedUserIds = Array.isArray(task.assignedUserIds) ? task.assignedUserIds : [];
   return {
     ...task,
     assignedTo:  names,
+    assignedUserIds,
     assigned_to: names.length === 1
       ? names[0]
       : JSON.stringify(names),
@@ -133,6 +160,11 @@ const mergeWithPending = (apiTasks) => {
 const getEffectiveTeam = (t, users) => {
   if (t.team) return t.team;
   if (!users || !users.length) return null;
+  const assignedIds = Array.isArray(t.assignedUserIds) ? t.assignedUserIds : [];
+  for (const id of assignedIds) {
+    const u = users.find((user) => user.id === id);
+    if (u?.team && !["team_leader", "leader"].includes(u.role)) return u.team;
+  }
   const assignees = Array.isArray(t.assignedTo) ? t.assignedTo : [];
   for (const name of assignees) {
     const u = users.find(u => u.name?.toLowerCase().trim() === name?.toLowerCase().trim());
@@ -387,13 +419,18 @@ export default function App() {
   };
 
   const onUpdateUser = (user) => {
+    const previous = users.find((existing) => existing.id === user.id);
     setUsers(p => p.map(x => x.id === user.id ? user : x));
+    if (previous?.name && previous.name !== user.name) {
+      void fetchTasks();
+    }
   };
 
   const onDeleteUser = async (id) => {
     setUsers(p => p.filter(x => x.id !== id));
     try {
       await api.deleteUser(id);
+      void fetchTasks();
     } catch (err) {
       console.error("deleteUser failed:", err);
       await fetchInitialData();

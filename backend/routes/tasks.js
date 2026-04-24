@@ -8,6 +8,8 @@ const asyncHandler = (fn) => (req, res, next) => Promise.resolve(fn(req, res, ne
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
+const normalizeName = (value) => String(value || "").trim().toLowerCase();
+
 const parseAssignedTo = (value) => {
   if (!value && value !== "") return [];
   if (Array.isArray(value)) return value.map(String).filter(Boolean);
@@ -30,13 +32,97 @@ const formatAssignedValue = (value) => {
   return value || "";
 };
 
+const parseAssignedUserIds = (...values) => {
+  for (const value of values) {
+    if (value == null || value === "") continue;
+    if (Array.isArray(value)) {
+      return value.map((id) => Number(id)).filter((id) => Number.isInteger(id));
+    }
+    if (typeof value === "number") {
+      return Number.isInteger(value) ? [value] : [];
+    }
+
+    const raw = String(value).trim();
+    if (!raw) continue;
+
+    if (raw.startsWith("[")) {
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          return parsed.map((id) => Number(id)).filter((id) => Number.isInteger(id));
+        }
+      } catch { /* fall through */ }
+    }
+
+    const parsed = Number(raw);
+    if (Number.isInteger(parsed)) return [parsed];
+  }
+
+  return [];
+};
+
+const buildUserMaps = (users = []) => {
+  const usersById = new Map();
+  const usersByName = new Map();
+
+  users.forEach((user) => {
+    usersById.set(user.id, user);
+    usersByName.set(normalizeName(user.name), user);
+  });
+
+  return { usersById, usersByName };
+};
+
+const resolveAssignments = (taskLike, userMaps = buildUserMaps()) => {
+  const names = parseAssignedTo(taskLike.assigned_to ?? taskLike.assignedTo ?? "");
+  const ids = parseAssignedUserIds(
+    taskLike.assignedUserIds,
+    taskLike.assigned_user_ids,
+    taskLike.assigned_user_id
+  );
+
+  const resolvedNames = [];
+  const resolvedIds = [];
+  const seenNames = new Set();
+  const seenIds = new Set();
+
+  ids.forEach((id) => {
+    if (seenIds.has(id)) return;
+    seenIds.add(id);
+    resolvedIds.push(id);
+
+    const matchedUser = userMaps.usersById.get(id);
+    const matchedName = matchedUser?.name;
+    if (matchedName && !seenNames.has(matchedName)) {
+      seenNames.add(matchedName);
+      resolvedNames.push(matchedName);
+    }
+  });
+
+  names.forEach((name) => {
+    if (!name || seenNames.has(name)) return;
+    seenNames.add(name);
+    resolvedNames.push(name);
+
+    const matchedUser = userMaps.usersByName.get(normalizeName(name));
+    if (matchedUser && !seenIds.has(matchedUser.id)) {
+      seenIds.add(matchedUser.id);
+      resolvedIds.push(matchedUser.id);
+    }
+  });
+
+  return { names: resolvedNames, ids: resolvedIds };
+};
+
 // Normalize Supabase row → frontend shape
-const normalize = t => {
-  const assigned = parseAssignedTo(t.assigned_to || t.assignedTo || "");
+const normalize = (t, userMaps = buildUserMaps()) => {
+  const assigned = resolveAssignments(t, userMaps);
   return {
     ...t,
-    assignedTo:  assigned,
-    assigned_to: assigned[0] || "",
+    assignedTo:  assigned.names,
+    assigned_to: assigned.names[0] || "",
+    assignedUserIds: assigned.ids,
+    assigned_user_id: assigned.ids[0] ?? null,
     subtasks:    t.subtasks  || [],
     userCompletions:      t.userCompletions      ?? t.user_completions      ?? {},
     teamLeaderReviewed:   t.teamLeaderReviewed   ?? t.team_leader_reviewed  ?? false,
@@ -52,17 +138,25 @@ const normalize = t => {
 // Prepare frontend payload → Supabase columns
 // Supabase columns were created with quoted camelCase names so we keep camelCase.
 // We only need to: remove non-column fields, and map assignedTo → assigned_to.
-const toDb = fields => {
+const toDb = (fields, userMaps = buildUserMaps()) => {
   const clean = { ...fields };
 
   // Remove fields that are not real DB columns
   delete clean.id;
   delete clean.created_at;
   delete clean.assigned_to; // will be re-set below from assignedTo
+  delete clean.assignedUserIds;
+  delete clean.assigned_user_ids;
 
   // Map assignedTo array → the assigned_to string column
-  if (clean.assignedTo !== undefined) {
-    clean.assigned_to = formatAssignedValue(clean.assignedTo);
+  if (
+    clean.assignedTo !== undefined ||
+    clean.assigned_user_id !== undefined ||
+    fields.assignedUserIds !== undefined
+  ) {
+    const assigned = resolveAssignments(clean, userMaps);
+    clean.assigned_to = formatAssignedValue(assigned.names);
+    clean.assigned_user_id = assigned.ids[0] ?? null;
     delete clean.assignedTo;
   }
 
@@ -83,12 +177,20 @@ const toDb = fields => {
 router.get("/", asyncHandler(async (req, res) => {
   const { role, name, team } = req.user;
 
-  const { data, error } = await supabase
-    .from("tasks")
-    .select("*")
-    .order("created_at", { ascending: false });
+  const [{ data, error }, { data: users, error: usersError }] = await Promise.all([
+    supabase
+      .from("tasks")
+      .select("*")
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("users")
+      .select("id, name, role, team"),
+  ]);
 
   if (error) return res.status(500).json({ error: error.message });
+  if (usersError) return res.status(500).json({ error: usersError.message });
+
+  const userMaps = buildUserMaps(users || []);
 
   // Filter tasks based on role:
   // - user        → only tasks where they are an assignee
@@ -99,48 +201,48 @@ router.get("/", asyncHandler(async (req, res) => {
 
   if (role === "user") {
     tasks = data.filter(t => {
-      const assignees = parseAssignedTo(t.assigned_to || t.assignedTo || "");
-      return assignees.some(a => a.toLowerCase().trim() === name.toLowerCase().trim());
+      const assigned = resolveAssignments(t, userMaps);
+      return assigned.ids.includes(req.user.id) ||
+        assigned.names.some(a => normalizeName(a) === normalizeName(name));
     });
   } else if (role === "team_leader" || role === "leader") {
-    // FIX: also include tasks individually assigned to members of this TL's team
-    // Step 1: get all users in this team
-    const { data: teamUsers } = await supabase
-      .from("users")
-      .select("name, role")
-      .eq("team", team);
-
-    const teamMemberNames = (teamUsers || [])
+    const teamUsers = (users || []).filter((user) => user.team === team);
+    const teamMemberNames = teamUsers
       .filter(u => !["team_leader", "leader"].includes(u.role))
-      .map(u => u.name?.toLowerCase().trim())
+      .map(u => normalizeName(u.name))
       .filter(Boolean);
+    const teamMemberIds = teamUsers
+      .filter(u => !["team_leader", "leader"].includes(u.role))
+      .map(u => u.id);
 
     tasks = data.filter(t => {
-      // Explicitly tagged with this team
       if (t.team === team) return true;
-      // OR individually assigned to someone in this team
-      const assignees = parseAssignedTo(t.assigned_to || t.assignedTo || "");
-      return assignees.some(a => teamMemberNames.includes(a.toLowerCase().trim()));
+      const assigned = resolveAssignments(t, userMaps);
+      return assigned.ids.some((id) => teamMemberIds.includes(id)) ||
+        assigned.names.some((a) => teamMemberNames.includes(normalizeName(a)));
     });
   }
 
-  res.json(tasks.map(normalize));
+  res.json(tasks.map((task) => normalize(task, userMaps)));
 }));
 
 // ── POST /api/tasks ───────────────────────────────────────────────────────────
 router.post("/", asyncHandler(async (req, res) => {
-  const { title, assignedTo, assigned_to, team, priority, due, description, subtasks } = req.body;
+  const { title, team, priority, due, description, subtasks } = req.body;
   if (!title) return res.status(400).json({ error: "Title is required" });
 
-  const assignedValue = assignedTo !== undefined
-    ? formatAssignedValue(assignedTo)
-    : formatAssignedValue(assigned_to);
+  const { data: users, error: usersError } = await supabase.from("users").select("id, name");
+  if (usersError) return res.status(500).json({ error: usersError.message });
+
+  const userMaps = buildUserMaps(users || []);
+  const assigned = resolveAssignments(req.body, userMaps);
 
   const { data, error } = await supabase
     .from("tasks")
     .insert([{
       title,
-      assigned_to:    assignedValue,
+      assigned_to:    formatAssignedValue(assigned.names),
+      assigned_user_id: assigned.ids[0] ?? null,
       team:           team        || null,
       priority:       priority    || "Medium",
       due:            due         || null,
@@ -159,13 +261,17 @@ router.post("/", asyncHandler(async (req, res) => {
     action: `Added task "${title}"`, performed_by: req.user.name, type: "success",
   }]);
 
-  res.status(201).json(normalize(data));
+  res.status(201).json(normalize(data, userMaps));
 }));
 
 // ── PUT /api/tasks/:id ────────────────────────────────────────────────────────
 router.put("/:id", asyncHandler(async (req, res) => {
   const { id }  = req.params;
-  const clean   = toDb(req.body);
+  const { data: users, error: usersError } = await supabase.from("users").select("id, name");
+  if (usersError) return res.status(500).json({ error: usersError.message });
+
+  const userMaps = buildUserMaps(users || []);
+  const clean   = toDb(req.body, userMaps);
 
   console.log("[tasks] PUT", id, "→ db fields:", Object.keys(clean));
 
@@ -186,7 +292,7 @@ router.put("/:id", asyncHandler(async (req, res) => {
     performed_by: req.user.name, type: "info",
   }]);
 
-  res.json(normalize(data));
+  res.json(normalize(data, userMaps));
 }));
 
 // ── DELETE /api/tasks/:id ─────────────────────────────────────────────────────

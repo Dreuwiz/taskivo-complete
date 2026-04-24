@@ -5,6 +5,17 @@ import { Avatar, Badge, Card, PageHeader } from "../components/ui/index";
 import { UserModal } from "../components/modals/UserModal";
 import { ConfirmModal } from "../components/modals/ConfirmModal";
 
+const isTaskAssignedToUser = (task, user) => {
+  const assignedUserIds = Array.isArray(task.assignedUserIds)
+    ? task.assignedUserIds
+    : [task.assigned_user_id].filter((id) => Number.isInteger(id));
+  const assignees = Array.isArray(task.assignedTo)
+    ? task.assignedTo
+    : [task.assignedTo ?? task.assigned_to].filter(Boolean);
+
+  return assignedUserIds.includes(user.id) || assignees.some(name => name === user.name);
+};
+
 export function UserManagementPage({ users, tasks, onAddUser, onUpdateUser, onDeleteUser }) {
   const [showAdd,      setShowAdd]      = useState(false);
   const [editUser,     setEditUser]     = useState(null);
@@ -52,7 +63,7 @@ export function UserManagementPage({ users, tasks, onAddUser, onUpdateUser, onDe
             </thead>
           <tbody>
             {filtered.map((u, i) => {
-              const ut   = tasks.filter(t => t.assignedTo===u.name);
+              const ut   = tasks.filter(t => isTaskAssignedToUser(t, u));
               const done = ut.filter(t => t.status==="Completed").length;
               return (
                 <tr key={u.id} style={{ borderBottom:i<filtered.length-1?"1px solid #f0f0f0":"none" }}>

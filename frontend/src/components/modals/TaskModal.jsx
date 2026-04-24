@@ -11,6 +11,9 @@ const todayStr = () => new Date().toISOString().split("T")[0];
 const isLeaderRole = (u) =>
   ["team_leader", "leader", "supervisor"].includes(u.role);
 
+const findUserByName = (users, name) =>
+  users.find((user) => user.name?.toLowerCase().trim() === name?.toLowerCase().trim());
+
 // ── AssigneeSelector ──────────────────────────────────────────────────────────
 // NOTE: selectedTeam prop removed — caller pre-filters `users` instead.
 // This means the dropdown is NEVER locked; TL gets full multi-select control.
@@ -317,6 +320,7 @@ export function TaskModal({ mode, initial, role, users, session, defaultPriority
         due:                  form.due,
         team:                 tlUser?.team || null,
         assignedTo:           [selectedTL],
+        assignedUserIds:      tlUser?.id ? [tlUser.id] : [],
         assigned_to:          selectedTL,
         subtasks:             form.subtasks.map(s => ({ ...s, done: false, userDone: {} })),
         userCompletions:      {},
@@ -373,6 +377,7 @@ export function TaskModal({ mode, initial, role, users, session, defaultPriority
           due:                  form.due,
           team:                 tlUser?.team || null,
           assignedTo:           [tlAssignee],
+          assignedUserIds:      tlUser?.id ? [tlUser.id] : [],
           assigned_to:          tlAssignee,
           subtasks:             form.subtasks.map(s => ({ ...s, done: false, userDone: {} })),
           userCompletions:      {},
@@ -398,6 +403,10 @@ export function TaskModal({ mode, initial, role, users, session, defaultPriority
     }
 
     const existingCompletions = initial?.userCompletions || {};
+    const assignedUsers = finalAssignees
+      .map((name) => findUserByName(users, name))
+      .filter(Boolean);
+    const assignedUserIds = assignedUsers.map((user) => user.id);
     const userCompletions = {};
     finalAssignees.forEach(name => {
       userCompletions[name] = existingCompletions[name] ?? { done: false };
@@ -421,6 +430,7 @@ export function TaskModal({ mode, initial, role, users, session, defaultPriority
       due:                  form.due,
       team:                 form.team || activeTeam || null,
       assignedTo:           finalAssignees,
+      assignedUserIds,
       assigned_to:          finalAssignees[0] || "",
       subtasks:             subtasksWithUserDone,
       userCompletions,

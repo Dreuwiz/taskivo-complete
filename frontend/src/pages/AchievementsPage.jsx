@@ -30,7 +30,14 @@ function getLevelTitle(level) {
 
 export function AchievementsPage({ role, tasks }) {
   const session = SESSION[role];
-  const myTasks = tasks.filter(t => (t.assignedTo || t.assigned_to) === session.name);
+  const myTasks = tasks.filter((task) => {
+    const assignedIds = Array.isArray(task.assignedUserIds) ? task.assignedUserIds : [];
+    const assignees = Array.isArray(task.assignedTo)
+      ? task.assignedTo
+      : [task.assignedTo ?? task.assigned_to].filter(Boolean);
+
+    return assignedIds.includes(session.id) || assignees.includes(session.name);
+  });
   const myDone  = myTasks.filter(t => t.status === "Completed").length;
 
   const badges = [

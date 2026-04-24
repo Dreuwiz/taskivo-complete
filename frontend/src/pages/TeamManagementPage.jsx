@@ -5,6 +5,17 @@ import { Avatar, Badge, Card, SectionTitle, PageHeader } from "../components/ui/
 import { TeamModal } from "../components/modals/TeamModal";
 import { ConfirmModal } from "../components/modals/ConfirmModal";
 
+const isTaskAssignedToUser = (task, user) => {
+  const assignedUserIds = Array.isArray(task.assignedUserIds)
+    ? task.assignedUserIds
+    : [task.assigned_user_id].filter((id) => Number.isInteger(id));
+  const assignees = Array.isArray(task.assignedTo)
+    ? task.assignedTo
+    : [task.assignedTo ?? task.assigned_to].filter(Boolean);
+
+  return assignedUserIds.includes(user.id) || assignees.some(name => name === user.name);
+};
+
 export function TeamManagementPage({ role, tasks, users, onUpdateUser }) {
   const [showCreate,     setShowCreate]     = useState(false);
   const [editTeam,       setEditTeam]       = useState(null);
@@ -127,8 +138,8 @@ export function TeamManagementPage({ role, tasks, users, onUpdateUser }) {
                   <p style={{ margin:0, fontSize:11, color:"#888" }}>{u.email}</p>
                 </div>
                 <span style={{ fontSize:12, color:"#888" }}>
-                  {tasks.filter(t=>t.assignedTo===u.name&&t.status==="Completed").length}/
-                  {tasks.filter(t=>t.assignedTo===u.name).length} done
+                  {tasks.filter(t => isTaskAssignedToUser(t, u) && t.status==="Completed").length}/
+                  {tasks.filter(t => isTaskAssignedToUser(t, u)).length} done
                 </span>
               </div>
             ))}
