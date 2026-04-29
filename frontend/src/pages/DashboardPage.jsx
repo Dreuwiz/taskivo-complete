@@ -179,17 +179,84 @@ function AttentionPanel({ title, icon, children, empty }) {
   );
 }
 
-function AttentionMetric({ label, value, tone = "#2386ff" }) {
+function AdminHealthCheck({ label, value, icon, tone = "#2386ff", detail }) {
+  const isClear = value === 0;
+  const activeTone = isClear ? "#27ae60" : tone;
+
   return (
     <div style={{
-      padding: "12px 14px",
-      borderRadius: 8,
-      backgroundColor: `${tone}12`,
-      border: `1px solid ${tone}28`,
+      display: "grid",
+      gridTemplateColumns: "32px 1fr auto",
+      alignItems: "center",
+      gap: 10,
+      padding: "10px 0",
+      borderBottom: "1px solid #f2f2f2",
       minWidth: 0,
     }}>
-      <p style={{ margin: 0, fontSize: 22, lineHeight: 1, fontWeight: 900, color: "#1a1a1a" }}>{value}</p>
-      <p style={{ margin: "5px 0 0", fontSize: 11, fontWeight: 700, color: tone, textTransform: "uppercase" }}>{label}</p>
+      <div style={{
+        width: 32,
+        height: 32,
+        borderRadius: 8,
+        backgroundColor: `${activeTone}12`,
+        color: activeTone,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontSize: 13,
+      }}>
+        <i className={icon} />
+      </div>
+      <div style={{ minWidth: 0 }}>
+        <p style={{ margin: 0, fontSize: 13, fontWeight: 800, color: "#1a1a1a" }}>{label}</p>
+        <p style={{ margin: "2px 0 0", fontSize: 11, color: "#888" }}>{isClear ? "Clear" : detail}</p>
+      </div>
+      <div style={{
+        minWidth: 34,
+        height: 28,
+        borderRadius: 8,
+        backgroundColor: `${activeTone}12`,
+        border: `1px solid ${activeTone}28`,
+        color: activeTone,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontSize: 16,
+        fontWeight: 900,
+      }}>
+        {value}
+      </div>
+    </div>
+  );
+}
+
+function AdminHealthSummary({ total }) {
+  const isClear = total === 0;
+
+  return (
+    <div style={{
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      gap: 14,
+      padding: "12px 14px",
+      borderRadius: 8,
+      backgroundColor: isClear ? "#f0fbf4" : "#fff8e6",
+      border: `1px solid ${isClear ? "#bce8ca" : "#f3d38b"}`,
+      marginBottom: 10,
+      minWidth: 0,
+    }}>
+      <div style={{ minWidth: 0 }}>
+        <p style={{ margin: 0, fontSize: 13, fontWeight: 800, color: "#1a1a1a" }}>
+          {isClear ? "System setup is clean" : `${total} setup item${total !== 1 ? "s" : ""} need attention`}
+        </p>
+        <p style={{ margin: "2px 0 0", fontSize: 11, color: "#777" }}>
+          Quick checks for tasks, users, and teams
+        </p>
+      </div>
+      <i
+        className={isClear ? "fa-regular fa-circle-check" : "fa-solid fa-triangle-exclamation"}
+        style={{ color: isClear ? "#27ae60" : "#c47b00", fontSize: 18, flexShrink: 0 }}
+      />
     </div>
   );
 }
@@ -307,16 +374,40 @@ function DashboardAttention({ role, tasks, users, session }) {
   const teams = [...new Set(users.filter(u => u.team).map(u => u.team))];
   const teamsWithoutLeader = teams.filter(team => !users.some(u => u.team === team && u.role === "team_leader"));
   const recentCompleted = tasks.filter(t => t.status === "Completed").sort(taskSortByRecentCompletion).slice(0, 4);
+  const systemAlertTotal = unassignedTasks.length + inactiveUsers.length + usersWithoutTeam.length + teamsWithoutLeader.length;
 
   return (
     <div className="dashboard-attention-grid">
       <AttentionPanel title="System Alerts" icon="fa-solid fa-bell" empty="No system alerts">
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10 }}>
-          <AttentionMetric label="Unassigned Tasks" value={unassignedTasks.length} tone="#c0392b" />
-          <AttentionMetric label="Inactive Users" value={inactiveUsers.length} tone="#c47b00" />
-          <AttentionMetric label="Users No Team" value={usersWithoutTeam.length} tone="#694AD7" />
-          <AttentionMetric label="Teams No Leader" value={teamsWithoutLeader.length} tone="#2386ff" />
-        </div>
+        <AdminHealthSummary total={systemAlertTotal} />
+        <AdminHealthCheck
+          label="Unassigned tasks"
+          value={unassignedTasks.length}
+          icon="fa-solid fa-inbox"
+          tone="#c0392b"
+          detail="Assign an owner from Tasks"
+        />
+        <AdminHealthCheck
+          label="Inactive users"
+          value={inactiveUsers.length}
+          icon="fa-solid fa-user-slash"
+          tone="#c47b00"
+          detail="Review account status"
+        />
+        <AdminHealthCheck
+          label="Users without team"
+          value={usersWithoutTeam.length}
+          icon="fa-solid fa-user-plus"
+          tone="#694AD7"
+          detail="Place staff or leaders into teams"
+        />
+        <AdminHealthCheck
+          label="Teams without leader"
+          value={teamsWithoutLeader.length}
+          icon="fa-solid fa-sitemap"
+          tone="#2386ff"
+          detail="Assign a team leader"
+        />
       </AttentionPanel>
       <AttentionPanel title="Setup Issues" icon="fa-solid fa-screwdriver-wrench" empty="Setup looks complete">
         {[
