@@ -214,6 +214,19 @@ button { font-family: inherit; }
   min-width: 0 !important;
 }
 
+.dashboard-attention-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  width: 100%;
+}
+
+@media (max-width: 1100px) {
+  .dashboard-attention-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Responsive cards - stack better on mobile */
 .card-responsive {
   width: 100%;
