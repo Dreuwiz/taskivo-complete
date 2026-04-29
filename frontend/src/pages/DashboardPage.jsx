@@ -21,6 +21,58 @@ const getNames = t => {
   return [];
 };
 
+const getAssignedUserIds = t => {
+  const raw = t.assignedUserIds ?? t.assigned_user_ids ?? t.assigned_user_id ?? null;
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw.map(Number).filter(Number.isInteger);
+  if (typeof raw === "number") return Number.isInteger(raw) ? [raw] : [];
+  if (typeof raw === "string") {
+    const trimmed = raw.trim();
+    if (trimmed.startsWith("[")) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        return Array.isArray(parsed) ? parsed.map(Number).filter(Number.isInteger) : [];
+      } catch {
+        return [];
+      }
+    }
+    const parsed = Number(trimmed);
+    return Number.isInteger(parsed) ? [parsed] : [];
+  }
+  return [];
+};
+
+const isLeaderRole = user => ["team_leader", "leader", "supervisor"].includes(user?.role);
+
+const getEffectiveTeam = (task, users) => {
+  if (task.team) return task.team;
+
+  for (const id of getAssignedUserIds(task)) {
+    const user = users.find(u => u.id === id);
+    if (user?.team && !isLeaderRole(user)) return user.team;
+  }
+
+  for (const name of getNames(task)) {
+    const user = users.find(u => u.name?.toLowerCase().trim() === name?.toLowerCase().trim());
+    if (user?.team && !isLeaderRole(user)) return user.team;
+  }
+
+  return null;
+};
+
+const isTLPendingTask = (task, session) =>
+  task.tlPendingAssignment === true &&
+  (
+    getAssignedUserIds(task).includes(session?.id) ||
+    getNames(task).some(name => name?.toLowerCase().trim() === session?.name?.toLowerCase().trim())
+  );
+
+const needsTLReview = (task, users) =>
+  task.status === "Under Review" && !!getEffectiveTeam(task, users) && task.teamLeaderReviewed !== true;
+
+const needsManagerReview = (task, users) =>
+  task.status === "Under Review" && (!getEffectiveTeam(task, users) || task.teamLeaderReviewed === true);
+
 const isActiveTask = t => ["Pending", "In Progress", "Under Review"].includes(t.status);
 
 const parseDate = value => {
@@ -57,6 +109,11 @@ const taskSortByDue = (a, b) => {
   const bd = parseDate(b.due)?.getTime() ?? Number.MAX_SAFE_INTEGER;
   return ad - bd;
 };
+
+const completedTime = task =>
+  parseDate(task.completedAt ?? task.completed_at ?? task.teamLeaderApprovedAt ?? task.updatedAt ?? task.updated_at ?? task.due)?.getTime() ?? 0;
+
+const taskSortByRecentCompletion = (a, b) => completedTime(b) - completedTime(a);
 
 function MiniTaskRow({ task, tone = "#2386ff", note }) {
   return (
@@ -160,7 +217,7 @@ function DashboardAttention({ role, tasks, users, session }) {
 
   if (role === "user") {
     const needsUpdate = activeTasks.filter(t => t.status !== "Under Review").sort(taskSortByDue).slice(0, 4);
-    const completed = tasks.filter(t => t.status === "Completed").slice(0, 4);
+    const completed = tasks.filter(t => t.status === "Completed").sort(taskSortByRecentCompletion).slice(0, 4);
 
     return (
       <div className="dashboard-attention-grid">
@@ -191,12 +248,14 @@ function DashboardAttention({ role, tasks, users, session }) {
       .filter(row => row.overdue > 0 || row.active > 0)
       .sort((a, b) => b.overdue - a.overdue || b.active - a.active)
       .slice(0, 4);
-    const pendingAssignments = tasks.filter(t => t.tlPendingAssignment === true).slice(0, 4);
+    const pendingAssignments = tasks.filter(t => isTLPendingTask(t, session)).slice(0, 4);
 
     return (
       <div className="dashboard-attention-grid">
         <AttentionPanel title="Needs Your Review" icon="fa-solid fa-clipboard-check" empty="No reviews waiting">
-          {reviewTasks.slice(0, 4).map(t => <MiniTaskRow key={t.id} task={t} tone="#c47b00" note="Ready for supervisor review" />)}
+          {reviewTasks.filter(t => needsTLReview(t, users) && getEffectiveTeam(t, users) === session.team).slice(0, 4).map(t => (
+            <MiniTaskRow key={t.id} task={t} tone="#c47b00" note="Ready for supervisor review" />
+          ))}
         </AttentionPanel>
         <AttentionPanel title="Member Attention" icon="fa-solid fa-user-clock" empty="Team workload looks clear">
           {memberAttention.map(({ user, overdue, active }) => (
@@ -211,7 +270,7 @@ function DashboardAttention({ role, tasks, users, session }) {
   }
 
   if (role === "manager") {
-    const managerReview = reviewTasks.filter(t => !t.team || t.teamLeaderReviewed === true).slice(0, 4);
+    const managerReview = reviewTasks.filter(t => needsManagerReview(t, users)).slice(0, 4);
     const teamNames = [...new Set(users.filter(u => u.team).map(u => u.team))];
     const teamRisks = teamNames
       .map(team => {
@@ -247,7 +306,7 @@ function DashboardAttention({ role, tasks, users, session }) {
   const usersWithoutTeam = users.filter(u => ["user", "team_leader"].includes(u.role) && !u.team);
   const teams = [...new Set(users.filter(u => u.team).map(u => u.team))];
   const teamsWithoutLeader = teams.filter(team => !users.some(u => u.team === team && u.role === "team_leader"));
-  const recentCompleted = tasks.filter(t => t.status === "Completed").slice(0, 4);
+  const recentCompleted = tasks.filter(t => t.status === "Completed").sort(taskSortByRecentCompletion).slice(0, 4);
 
   return (
     <div className="dashboard-attention-grid">
@@ -285,8 +344,11 @@ export function DashboardPage({ role, tasks, users, sessionData }) {
   const myTasks   = tasks.filter(t =>
     getNames(t).some(n => n?.toLowerCase().trim() === sessionNameNorm)
   );
-  const teamTasks = tasks.filter(t => t.team === session.team);
-  const scoped    = role === "user" ? myTasks : role === "team_leader" ? teamTasks : tasks;
+  const scoped    = role === "user"
+    ? myTasks
+    : role === "team_leader"
+      ? tasks.filter(t => getEffectiveTeam(t, users) === session.team || isTLPendingTask(t, session))
+      : tasks;
   const weekData  = getWeekCounts(scoped);
 
   const totalT  = scoped.length;
