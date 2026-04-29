@@ -218,6 +218,15 @@ router.get("/", asyncHandler(async (req, res) => {
     tasks = data.filter(t => {
       if (t.team === team) return true;
       const assigned = resolveAssignments(t, userMaps);
+      if (
+        t.tlPendingAssignment === true &&
+        (
+          assigned.ids.includes(req.user.id) ||
+          assigned.names.some((a) => normalizeName(a) === normalizeName(name))
+        )
+      ) {
+        return true;
+      }
       return assigned.ids.some((id) => teamMemberIds.includes(id)) ||
         assigned.names.some((a) => teamMemberNames.includes(normalizeName(a)));
     });
@@ -228,7 +237,28 @@ router.get("/", asyncHandler(async (req, res) => {
 
 // ── POST /api/tasks ───────────────────────────────────────────────────────────
 router.post("/", asyncHandler(async (req, res) => {
-  const { title, team, priority, due, description, subtasks } = req.body;
+  const {
+    title,
+    team,
+    priority,
+    due,
+    description,
+    subtasks,
+    status,
+    tlPendingAssignment,
+    assignedByManager,
+    assignedByManagerAt,
+    tlAssignedBy,
+    tlAssignedAt,
+    teamLeaderReviewed,
+    teamLeaderApprovedBy,
+    teamLeaderApprovedAt,
+    userCompletions,
+    rejectionReason,
+    rejectedBy,
+    reviewedBy,
+    completedAt,
+  } = req.body;
   if (!title) return res.status(400).json({ error: "Title is required" });
 
   const { data: users, error: usersError } = await supabase.from("users").select("id, name");
@@ -248,9 +278,20 @@ router.post("/", asyncHandler(async (req, res) => {
       due:            due         || null,
       description:    description || "",
       subtasks:       subtasks    || [],
-      status:         "Pending",
-      userCompletions: {},
-      teamLeaderReviewed: false,
+      status:         status      || "Pending",
+      userCompletions:      userCompletions      || {},
+      tlPendingAssignment:  tlPendingAssignment  ?? false,
+      assignedByManager:    assignedByManager    ?? null,
+      assignedByManagerAt:  assignedByManagerAt  ?? null,
+      tlAssignedBy:         tlAssignedBy         ?? null,
+      tlAssignedAt:         tlAssignedAt         ?? null,
+      teamLeaderReviewed:   teamLeaderReviewed   ?? false,
+      teamLeaderApprovedBy: teamLeaderApprovedBy ?? null,
+      teamLeaderApprovedAt: teamLeaderApprovedAt ?? null,
+      rejectionReason:      rejectionReason      ?? null,
+      rejectedBy:           rejectedBy           ?? null,
+      reviewedBy:           reviewedBy           ?? null,
+      completedAt:          completedAt          ?? null,
     }])
     .select()
     .single();
