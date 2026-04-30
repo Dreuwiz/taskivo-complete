@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { SESSION, ROLES } from "../constants/roles";
 import { Avatar, Badge, Card, SectionTitle, PageHeader } from "../components/ui/index";
+import { RejectModal } from "../components/modals/RejectModal";
 
 const isTaskAssignedToUser = (task, user) => {
   const assignedUserIds = Array.isArray(task.assignedUserIds)
@@ -18,8 +20,45 @@ export function TeamOverviewPage({ role, tasks, users, onUpdateTask }) {
   // ← null guard
   if (!session) return <div style={{ padding:32 }}>Loading team overview...</div>;
 
-  const members         = users.filter(u => u.team===session.team && u.role==="user");
-  const pendingApproval = tasks.filter(t => t.team===session.team && t.status==="Completed");
+  const [rejectTarget, setRejectTarget] = useState(null);
+
+  const members        = users.filter(u => u.team===session.team && u.role==="user");
+  const pendingReview  = tasks.filter(t =>
+    t.status==="Under Review" &&
+    t.teamLeaderReviewed !== true &&
+    (t.team===session.team || members.some(u => isTaskAssignedToUser(t, u)))
+  );
+
+  const handleApprove = t => onUpdateTask({
+    ...t,
+    teamLeaderReviewed:   true,
+    teamLeaderApprovedBy: session.name,
+    teamLeaderApprovedAt: new Date().toISOString(),
+  });
+
+  const handleReject = reason => {
+    const assignees = Array.isArray(rejectTarget.assignedTo)
+      ? rejectTarget.assignedTo
+      : [rejectTarget.assignedTo ?? rejectTarget.assigned_to].filter(Boolean);
+    const resetCompletions = Object.fromEntries(assignees.map(n => [n, { done: false }]));
+    const resetSubtasks = (rejectTarget.subtasks || []).map(s => ({
+      ...s, done: false,
+      userDone: Object.fromEntries(assignees.map(n => [n, false])),
+    }));
+    onUpdateTask({
+      ...rejectTarget,
+      status:               "In Progress",
+      rejectionReason:      reason,
+      rejectedBy:           session.name,
+      reviewedBy:           null,
+      teamLeaderReviewed:   false,
+      teamLeaderApprovedBy: null,
+      teamLeaderApprovedAt: null,
+      userCompletions:      resetCompletions,
+      subtasks:             resetSubtasks,
+    });
+    setRejectTarget(null);
+  };
 
   return (
     <div>
@@ -50,23 +89,40 @@ export function TeamOverviewPage({ role, tasks, users, onUpdateTask }) {
         })}
       </div>
 
-      {pendingApproval.length > 0 && (
+      {pendingReview.length > 0 && (
         <Card>
-          <SectionTitle icon="✅">Tasks Awaiting Your Review ({pendingApproval.length})</SectionTitle>
-          {pendingApproval.map(t => (
-            <div key={t.id} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 0", borderBottom:"1px solid #f5f5f5" }}>
-              <div style={{ flex:1 }}>
-                <p style={{ margin:0, fontWeight:600, fontSize:14 }}>{t.title}</p>
-                <p style={{ margin:0, fontSize:12, color:"#888" }}>by {t.assignedTo||t.assigned_to} — due {t.due}</p>
+          <SectionTitle icon="🕐">Tasks Awaiting Your Review ({pendingReview.length})</SectionTitle>
+          {pendingReview.map(t => {
+            const assignees = Array.isArray(t.assignedTo)
+              ? t.assignedTo
+              : [t.assignedTo ?? t.assigned_to].filter(Boolean);
+            return (
+              <div key={t.id} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 0", borderBottom:"1px solid #f5f5f5" }}>
+                <div style={{ flex:1 }}>
+                  <p style={{ margin:0, fontWeight:600, fontSize:14 }}>{t.title}</p>
+                  <p style={{ margin:0, fontSize:12, color:"#888" }}>
+                    {assignees.join(", ") || "Unassigned"} — due {t.due || "—"}
+                  </p>
+                </div>
+                <Badge label="Under Review" style={{ backgroundColor:"#fff8e0", color:"#c47b00" }}/>
+                <button
+                  onClick={() => handleApprove(t)}
+                  style={{ background:"#e6f9ed", border:"1px solid #a8e6bf", borderRadius:6, padding:"5px 12px", fontSize:12, fontWeight:600, color:"#27ae60", cursor:"pointer" }}>
+                  ✓ Approve
+                </button>
+                <button
+                  onClick={() => setRejectTarget(t)}
+                  style={{ background:"#fdecea", border:"1px solid #f5c6c2", borderRadius:6, padding:"5px 12px", fontSize:12, fontWeight:600, color:"#c0392b", cursor:"pointer" }}>
+                  Reject
+                </button>
               </div>
-              <Badge label="Completed" style={{ backgroundColor:"#e6f9ed", color:"#27ae60" }}/>
-              <button onClick={() => onUpdateTask({ ...t, status:"Pending" })}
-                style={{ background:"#fff4e0", border:"1px solid #ffe0a0", borderRadius:6, padding:"5px 12px", fontSize:12, fontWeight:600, color:"#c47b00", cursor:"pointer" }}>
-                Reopen
-              </button>
-            </div>
-          ))}
+            );
+          })}
         </Card>
+      )}
+
+      {rejectTarget && (
+        <RejectModal task={rejectTarget} onConfirm={handleReject} onClose={() => setRejectTarget(null)} />
       )}
     </div>
   );
