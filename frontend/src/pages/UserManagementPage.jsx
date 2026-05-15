@@ -31,11 +31,11 @@ export function UserManagementPage({ users, tasks, onAddUser, onUpdateUser, onDe
     <div>
       <PageHeader title="User Management" subtitle="Add, edit, and remove system users — Admin only"/>
 
-      <div style={{ display:"flex", gap:12, marginBottom:20, flexWrap:"wrap", alignItems:"center" }}>
-        <button onClick={() => setShowAdd(true)} style={btnStyle("#c0392b","white")}>
+      <div className="page-toolbar">
+        <button className="toolbar-add-btn" onClick={() => setShowAdd(true)} style={btnStyle("#c0392b","white")}>
           <i className="fa-solid fa-user-plus" style={{ marginRight:6 }}/>Add User
         </button>
-        <div style={{ display:"flex", gap:6 }}>
+        <div className="filter-group">
           {["All","user","team_leader","manager","admin"].map(r => (
             <button key={r} onClick={() => setRoleFilter(r)}
               style={{ padding:"7px 13px", borderRadius:20, border:"1px solid", fontSize:12, fontWeight:600, cursor:"pointer",
@@ -46,8 +46,8 @@ export function UserManagementPage({ users, tasks, onAddUser, onUpdateUser, onDe
             </button>
           ))}
         </div>
-        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="🔍 Search users…"
-          style={{ padding:"7px 12px", borderRadius:7, border:"1px solid #ddd", fontSize:13, outline:"none", width:200, marginLeft:"auto" }}/>
+        <input className="toolbar-search" value={search} onChange={e => setSearch(e.target.value)} placeholder="🔍 Search users…"
+          style={{ marginLeft:"auto" }}/>
       </div>
 
       <Card style={{ padding:0, overflow:"hidden" }}>

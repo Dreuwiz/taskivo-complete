@@ -273,3 +273,68 @@ button { font-family: inherit; }
 .google-visualization-table-tr-odd {
   background-color: #fafbff !important;
 }
+
+/* -- Page toolbar (filter bar + search) ------------------------------------ */
+.page-toolbar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  align-items: center;
+  width: 100%;
+}
+
+.filter-group {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.toolbar-search {
+  padding: 7px 12px;
+  border-radius: 7px;
+  border: 1px solid #ddd;
+  font-size: 13px;
+  outline: none;
+  width: 180px;
+  min-width: 120px;
+  flex-shrink: 1;
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .page-toolbar {
+    gap: 8px;
+  }
+
+  .filter-group {
+    width: 100%;
+    order: 2;
+  }
+
+  .toolbar-search {
+    width: 100%;
+    min-width: 0;
+    order: 3;
+  }
+
+  .toolbar-add-btn {
+    order: 1;
+  }
+
+  .toolbar-badge {
+    order: 1;
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .filter-group {
+    gap: 4px;
+  }
+
+  .filter-group button {
+    padding: 6px 9px !important;
+    font-size: 11px !important;
+  }
+}

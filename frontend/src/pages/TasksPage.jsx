@@ -1027,15 +1027,15 @@ export function TasksPage({
     <div>
       <PageHeader title="Tasks" subtitle={scopeLabel} />
 
-      <div style={{ display: "flex", gap: 12, marginBottom: 20, flexWrap: "wrap", alignItems: "center" }}>
+      <div className="page-toolbar">
         {canAdd && (
-          <button onClick={() => setShowAdd(true)} style={btnStyle("#38d96e", "#fff")}>
+          <button className="toolbar-add-btn" onClick={() => setShowAdd(true)} style={btnStyle("#38d96e", "#fff")}>
             <i className="fa-solid fa-plus" style={{ marginRight: 6 }} />Add Task
           </button>
         )}
 
         {isTeamLeader && pendingAssignmentCount > 0 && (
-          <div style={{
+          <div className="toolbar-badge" style={{
             display: "flex", alignItems: "center", gap: 8,
             padding: "6px 14px", borderRadius: 20,
             backgroundColor: "#e8f0fe", border: "1px solid #c5d8fc",
@@ -1052,7 +1052,7 @@ export function TasksPage({
           </div>
         )}
 
-        <div style={{ display: "flex", gap: 6, marginLeft: "auto" }}>
+        <div className="filter-group" style={{ marginLeft: "auto" }}>
           {["All", "Pending", "In Progress", "Under Review", "Completed"].map(s => (
             <button key={s} onClick={() => setStatusFilter(s)}
               style={{
@@ -1076,10 +1076,10 @@ export function TasksPage({
           ))}
         </div>
         <input
+          className="toolbar-search"
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="🔍 Search tasks…"
-          style={{ padding: "7px 12px", borderRadius: 7, border: "1px solid #ddd", fontSize: 13, outline: "none", width: 180 }}
         />
       </div>
 
