@@ -32,7 +32,8 @@ function AssigneeSelector({ users, selectedNames, onChange, currentUserName }) {
   const eligible = users.filter(u =>
     u.name !== currentUserName &&
     u.status === "Active" &&
-    !isLeaderRole(u)
+    !isLeaderRole(u) &&
+    u.role !== "admin"
   );
 
   const byTeam = eligible.reduce((acc, u) => {
@@ -239,6 +240,7 @@ export function TaskModal({ mode, initial, role, users, session, defaultPriority
         u.team === teamName &&
         u.status === "Active" &&
         !isLeaderRole(u) &&
+        u.role !== "admin" &&
         u.name !== session?.name
       )
       .map(u => u.name)
@@ -250,6 +252,7 @@ export function TaskModal({ mode, initial, role, users, session, defaultPriority
     u.team === activeTeam &&
     u.status === "Active" &&
     !isLeaderRole(u) &&
+    u.role !== "admin" &&
     u.name !== session?.name
   );
 
