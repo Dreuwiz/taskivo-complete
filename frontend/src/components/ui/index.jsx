@@ -37,12 +37,17 @@ export function StatCard({ label, value, icon, color }) {
   );
 }
 
-export function Card({ children, style }) {
+export function Card({ children, style, onClick, onMouseEnter, onMouseLeave }) {
   return (
-    <div style={{
-      backgroundColor:"white", borderRadius:10,
-      boxShadow:"0 2px 8px rgba(0,0,0,0.09)", padding:20, ...style,
-    }}>
+    <div
+      style={{
+        backgroundColor:"white", borderRadius:10,
+        boxShadow:"0 2px 8px rgba(0,0,0,0.09)", padding:20, ...style,
+      }}
+      onClick={onClick}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+    >
       {children}
     </div>
   );
