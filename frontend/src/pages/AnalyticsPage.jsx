@@ -185,7 +185,7 @@ export function AnalyticsPage({ role, tasks, users }) {
       <PageHeader title="Analytics" subtitle={subtitle} />
       <div className="analytics-grid">
 
-        <ChartCard title="Completion Rate" icon="📊" className="card-responsive">
+        <ChartCard title="Completion Rate" icon="fa-solid fa-chart-bar" className="card-responsive">
           <div className="chart-wrapper">
             <Chart
               chartVersion="current"  
@@ -205,7 +205,7 @@ export function AnalyticsPage({ role, tasks, users }) {
           </div>
         </ChartCard>
 
-        <ChartCard title="Task Status Breakdown" icon="🍩" className="card-responsive">
+        <ChartCard title="Task Status Breakdown" icon="fa-solid fa-chart-pie" className="card-responsive">
           <div className="chart-wrapper">
             <Chart
               chartVersion="current"  
@@ -226,7 +226,7 @@ export function AnalyticsPage({ role, tasks, users }) {
 
         <ChartCard
           title={`Task Activity — ${rangeLabel}`}
-          icon="📈"
+          icon="fa-solid fa-chart-line"
           className="chart-full-width card-responsive"
         >
           <RangeFilter value={activityRange} onChange={setActivityRange} />
@@ -250,7 +250,7 @@ export function AnalyticsPage({ role, tasks, users }) {
           </div>
         </ChartCard>
 
-        <ChartCard title="User Activity" icon="👥" className="chart-full-width card-responsive">
+        <ChartCard title="User Activity" icon="fa-solid fa-users" className="chart-full-width card-responsive">
           <div className="scroll-panel" style={{ height: "56vh", overflowY: "scroll" }}>
             <div className="table-responsive">
               <Chart

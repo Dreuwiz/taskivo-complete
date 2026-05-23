@@ -1,6 +1,4 @@
 import { MAX_PER_DAY, getBarColor } from "../../utils/helpers";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faChartBar, faUsers, faCalendar, faClipboard, faPen, faTriangleExclamation, faCheck, faList } from "@fortawesome/free-solid-svg-icons";
 
 export function Badge({ label, style }) {
   return (
@@ -53,24 +51,11 @@ export function Card({ children, style, onClick, onMouseEnter, onMouseLeave }) {
   );
 }
 
-const emojiToIcon = {
-  "📊": faChartBar,
-  "👥": faUsers,
-  "📅": faCalendar,
-  "📋": faClipboard,
-  "📝": faPen,
-  "⚠️": faTriangleExclamation,
-  "✅": faCheck,
-  "🍩": faList, // for pie chart or something
-};
-
+// icon prop now accepts a Font Awesome class string e.g. "fa-solid fa-chart-bar"
 export function SectionTitle({ icon, children }) {
-  const faIcon = emojiToIcon[icon];
   return (
     <h3 style={{ margin:"0 0 16px", fontSize:15, fontWeight:700, color:"#333" }}>
-      {icon && (
-        faIcon ? <FontAwesomeIcon icon={faIcon} style={{ marginRight: 6 }} /> : <span style={{ marginRight:6 }}>{icon}</span>
-      )}
+      {icon && <i className={icon} style={{ marginRight:7, color:"#555", fontSize:14 }} />}
       {children}
     </h3>
   );

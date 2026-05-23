@@ -75,6 +75,13 @@ const LOG_COLOR = {
   warning: "#c47b00",
 };
 
+const LOG_ICON = {
+  danger:  "fa-solid fa-circle-xmark",
+  info:    "fa-solid fa-circle-info",
+  success: "fa-solid fa-circle-check",
+  warning: "fa-solid fa-triangle-exclamation",
+};
+
 const TYPE_FILTERS = [
   { key: "all",     label: "All",     bg: "#f0f0f0", color: "#555"    },
   { key: "success", label: "Success", bg: "#e6f9ed", color: "#27ae60" },
@@ -213,7 +220,7 @@ export function SystemSettingsPage({ auditLog: initialAuditLog, onAuditAdd, user
 
         {/* Task Settings */}
         <Card>
-          <SectionTitle icon="📋">Task Settings</SectionTitle>
+          <SectionTitle icon="fa-solid fa-clipboard-list">Task Settings</SectionTitle>
           <SliderRow label="Max Tasks Per Day" desc="Maximum tasks assignable per user per day"
             cfgKey="maxTasksPerDay" min={1} max={30} {...sharedProps} />
           <SelectRow label="Default Priority" desc="Priority pre-filled when creating a new task"
@@ -235,7 +242,7 @@ export function SystemSettingsPage({ auditLog: initialAuditLog, onAuditAdd, user
 
         {/* System Stats */}
         <Card>
-          <SectionTitle icon="📊">System Stats</SectionTitle>
+          <SectionTitle icon="fa-solid fa-chart-bar">System Stats</SectionTitle>
           {statRows.map(s => (
             <div key={s.l} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: "1px solid #f5f5f5" }}>
               <span style={{ fontSize: 13, color: "#666" }}>{s.l}</span>
@@ -249,7 +256,7 @@ export function SystemSettingsPage({ auditLog: initialAuditLog, onAuditAdd, user
 
           {/* Header */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-            <SectionTitle icon="📝">Audit Log</SectionTitle>
+            <SectionTitle icon="fa-solid fa-pen-to-square">Audit Log</SectionTitle>
             <button onClick={refreshAudit} disabled={refreshing}
               style={{
                 padding: "6px 14px", borderRadius: 7, border: "1px solid #ddd",
@@ -339,7 +346,7 @@ export function SystemSettingsPage({ auditLog: initialAuditLog, onAuditAdd, user
             <div className="scroll-panel">
               {filteredLog.map((e, i) => (
                 <div key={e.id ?? i} style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "9px 0", borderBottom: "1px solid #f5f5f5" }}>
-                  <div style={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: LOG_COLOR[e.type] || "#888", marginTop: 5, flexShrink: 0 }} />
+                  <i className={LOG_ICON[e.type] || "fa-solid fa-circle-info"} style={{ color: LOG_COLOR[e.type] || "#888", fontSize: 15, flexShrink: 0, marginTop: 1 }} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ margin: 0, fontSize: 13, color: "#333", wordBreak: "break-word" }}>{e.action}</p>
                     <p style={{ margin: "2px 0 0", fontSize: 11, color: "#aaa" }}>

@@ -221,7 +221,7 @@ export function TeamOverviewPage({ role, tasks, users, onUpdateTask }) {
 
       {pendingReview.length > 0 && (
         <Card>
-          <SectionTitle icon="🕐">Tasks Awaiting Your Review ({pendingReview.length})</SectionTitle>
+          <SectionTitle icon="fa-solid fa-clock">Tasks Awaiting Your Review ({pendingReview.length})</SectionTitle>
           {pendingReview.map(t => {
             const assignees = Array.isArray(t.assignedTo)
               ? t.assignedTo

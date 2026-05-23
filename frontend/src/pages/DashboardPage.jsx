@@ -496,7 +496,7 @@ export function DashboardPage({ role, tasks, users, sessionData }) {
           justifyContent: "space-between",
           marginBottom: 6,
         }}>
-          <SectionTitle icon="📅" style={{ margin: 0 }}>Weekly Activity</SectionTitle>
+        <SectionTitle icon="fa-solid fa-calendar-days">Weekly Activity</SectionTitle>
 
           <div style={{
             display: "flex",

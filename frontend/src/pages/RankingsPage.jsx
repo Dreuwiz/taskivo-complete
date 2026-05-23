@@ -13,10 +13,11 @@ const isTaskAssignedToUser = (task, user) => {
   return ids.includes(user.id) || names.some(n => n === user.name);
 };
 
-const MEDAL = ["🥇", "🥈", "🥉"];
+const MEDAL_ICON = ["fa-solid fa-trophy", "fa-solid fa-medal", "fa-solid fa-award"];
+const MEDAL_COLOR = ["#f0ad00", "#aaa", "#c47b00"];
 
 function RankBadge({ rank }) {
-  if (rank <= 3) return <span style={{ fontSize: 20 }}>{MEDAL[rank - 1]}</span>;
+  if (rank <= 3) return <i className={MEDAL_ICON[rank - 1]} style={{ fontSize: 18, color: MEDAL_COLOR[rank - 1] }} />;
   return (
     <span style={{
       width: 28, height: 28, borderRadius: "50%", backgroundColor: "#f0f0f0",
@@ -164,9 +165,9 @@ export function RankingsPage({ users, tasks }) {
   }).sort((a, b) => b.teamPoints - a.teamPoints);
 
   const TABS = [
-    { id: "overall", label: "🏆 By Rank",   desc: "All members ranked by points" },
-    { id: "team",    label: "👥 By Team",    desc: "Teams ranked by total points" },
-    { id: "member",  label: "👤 By Member",  desc: "Drill down into any member" },
+    { id: "overall", label: "By Rank",   icon: "fa-solid fa-ranking-star" },
+    { id: "team",    label: "By Team",   icon: "fa-solid fa-people-group" },
+    { id: "member",  label: "By Member", icon: "fa-solid fa-user"         },
   ];
 
   return (
@@ -197,7 +198,10 @@ export function RankingsPage({ users, tasks }) {
               borderColor: tab === t.id ? "#c0392b" : "#ddd",
               backgroundColor: tab === t.id ? "#c0392b" : "white",
               color: tab === t.id ? "white" : "#555",
-            }}>{t.label}</button>
+              display: "flex", alignItems: "center", gap: 7,
+            }}>
+            <i className={t.icon} />{t.label}
+          </button>
         ))}
       </div>
 

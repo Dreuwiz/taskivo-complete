@@ -149,7 +149,7 @@ export function TeamManagementPage({ role, tasks, users, onUpdateUser }) {
 
       {unassigned.length > 0 && (
         <Card style={{ maxWidth:"100%", backgroundColor:"#fffbe6", border:"1px solid #ffe58f" }}>
-          <SectionTitle icon="⚠️">Unassigned Users</SectionTitle>
+          <SectionTitle icon="fa-solid fa-triangle-exclamation">Unassigned Users</SectionTitle>
           <p style={{ margin:"0 0 12px", fontSize:13, color:"#888" }}>These users have no team.</p>
           <div style={{ display:"flex", flexWrap:"wrap", gap:10 }}>
             {unassigned.map(u => (
