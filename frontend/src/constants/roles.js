@@ -33,14 +33,12 @@ export const NAV_BY_ROLE = {
   user:[
     {id:"dashboard",    icon:"fa-solid fa-house",                    label:"Dashboard"   },
     {id:"tasks",        icon:"fa-solid fa-file",                     label:"Tasks"       },
-    {id:"achievements", icon:"fa-solid fa-trophy",                   label:"Achievements"},
     {id:"logout",       icon:"fa-solid fa-arrow-right-from-bracket", label:"Logout"      },
   ],
   team_leader:[
     {id:"dashboard",     icon:"fa-solid fa-house",                    label:"Dashboard"    },
     {id:"tasks",         icon:"fa-solid fa-file",                     label:"Tasks"        },
     {id:"team_overview", icon:"fa-solid fa-people-group",             label:"Team Overview"},
-    {id:"achievements",  icon:"fa-solid fa-trophy",                   label:"Achievements" },
     {id:"analytics",     icon:"fa-solid fa-chart-line",               label:"Analytics"    },
     {id:"logout",        icon:"fa-solid fa-arrow-right-from-bracket", label:"Logout"       },
   ],
@@ -56,6 +54,7 @@ export const NAV_BY_ROLE = {
     {id:"tasks",           icon:"fa-solid fa-file",                     label:"Tasks"          },
     {id:"team_management", icon:"fa-solid fa-sitemap",                  label:"Team Management"},
     {id:"analytics",       icon:"fa-solid fa-chart-line",               label:"Analytics"      },
+    {id:"rankings",        icon:"fa-solid fa-ranking-star",             label:"Rankings"       },
     {id:"user_management", icon:"fa-solid fa-users",                    label:"User Management"},
     {id:"system_settings", icon:"fa-solid fa-gear",                     label:"System Settings"},
     {id:"logout",          icon:"fa-solid fa-arrow-right-from-bracket", label:"Logout"         },

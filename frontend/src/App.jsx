@@ -4,7 +4,7 @@ import { Sidebar } from "./components/layout/Sidebar";
 import { LoginScreen } from "./pages/LoginScreen";
 import { DashboardPage } from "./pages/DashboardPage";
 import { TasksPage } from "./pages/TasksPage";
-import { AchievementsPage } from "./pages/AchievementsPage";
+import { RankingsPage } from "./pages/RankingsPage";
 import { AnalyticsPage } from "./pages/AnalyticsPage";
 import { TeamOverviewPage } from "./pages/TeamOverviewPage";
 import { TeamManagementPage } from "./pages/TeamManagementPage";
@@ -568,8 +568,8 @@ export default function App() {
             onDeleteTask={onDeleteTask}
           />
         )}
-        {activePage === "achievements" && (
-          <AchievementsPage role={mappedRole} tasks={tasks ?? []} />
+        {activePage === "rankings" && (
+          <RankingsPage users={users ?? []} tasks={tasks ?? []} />
         )}
         {activePage === "analytics" && (
           <AnalyticsPage role={mappedRole} tasks={tasks ?? []} users={users ?? []} />

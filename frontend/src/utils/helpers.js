@@ -24,6 +24,21 @@ export const PRIORITY_STYLE = {
   Low:      { bg:"#f0f0f0", text:"#666"    },
 };
 
+export const POINTS_BY_PRIORITY = {
+  Critical: 40,
+  High:     25,
+  Medium:   10,
+  Low:       5,
+};
+
+export const calcPoints = (tasks, userName) =>
+  tasks
+    .filter(t => t.status === "Completed" && (
+      (Array.isArray(t.assignedTo) ? t.assignedTo : [t.assignedTo ?? t.assigned_to].filter(Boolean))
+        .some(n => n?.toLowerCase().trim() === userName?.toLowerCase().trim())
+    ))
+    .reduce((sum, t) => sum + (POINTS_BY_PRIORITY[t.priority] ?? 10), 0);
+
 export const STATUS_STYLE = {
   "Pending":        { bg:"#f0f0f0", text:"#888"    },
   "In Progress":    { bg:"#ede9fc", text:"#694AD7" },
