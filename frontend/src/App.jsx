@@ -27,6 +27,17 @@ const DEFAULT_SETTINGS = {
   requireApprovalForHighPriority: false,
 };
 
+const loadSettings = () => {
+  try {
+    const saved = JSON.parse(localStorage.getItem("taskivo_settings"));
+    return saved ? { ...DEFAULT_SETTINGS, ...saved } : DEFAULT_SETTINGS;
+  } catch { return DEFAULT_SETTINGS; }
+};
+
+const saveSettings = (s) => {
+  try { localStorage.setItem("taskivo_settings", JSON.stringify(s)); } catch {}
+};
+
 // ── Normalize assignedTo ──────────────────────────────────────────────────────
 const normalizeTask = (t) => {
   const raw = t.assignedTo ?? t.assigned_to ?? null;
@@ -190,7 +201,7 @@ export default function App() {
   const [auditLog,    setAuditLog]    = useState([]);
   const [loading,     setLoading]     = useState(true);
   const [initialDataReady, setInitialDataReady] = useState(false);
-  const [settings,    setSettings]    = useState(DEFAULT_SETTINGS);
+  const [settings,    setSettings]    = useState(loadSettings);
   const [sidebarVisible, setSidebarVisible] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -311,10 +322,12 @@ export default function App() {
 
   useEffect(() => {
     if (!currentUser) return;
-    if (activePage === "system_settings" && auditLog.length === 0) {
+    if (activePage === "system_settings") {
       void fetchAudit();
+      void fetchUsers();
+      void fetchTasks();
     }
-  }, [activePage, currentUser, auditLog.length]);
+  }, [activePage, currentUser]);
 
   const handleLogin = (token, user) => {
     if (!token || !user) { console.error("❌ handleLogin received invalid data"); return; }
@@ -596,7 +609,13 @@ export default function App() {
             users={users ?? []}
             tasks={tasks ?? []}
             settings={settings}
-            onSettingsChange={setSettings}
+            onSettingsChange={(updater) => {
+              setSettings(prev => {
+                const next = typeof updater === "function" ? updater(prev) : updater;
+                saveSettings(next);
+                return next;
+              });
+            }}
           />
         )}
       </main>
