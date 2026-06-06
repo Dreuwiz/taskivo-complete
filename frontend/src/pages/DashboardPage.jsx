@@ -1,14 +1,15 @@
+import { useState } from "react";
 import { SESSION } from "../constants/roles";
 import { DAYS, getWeekCounts } from "../utils/helpers";
 import { StatCard, Card, SectionTitle, PageHeader, WeekRow, Badge } from "../components/ui/index";
 
 // ── Gamification helpers ──────────────────────────────────────────────────────
 const BADGES_DEF = [
-  { icon: "fa-solid fa-fire",   label: "7-Day Streak",   color: "#e74c3c", xp: 200, check: (done, streak) => streak >= 7 },
-  { icon: "fa-solid fa-star",   label: "Task Master",    color: "#f0ad00", xp: 500, check: (done)         => done >= 50  },
-  { icon: "fa-solid fa-medal",  label: "Perfect Week",   color: "#2386ff", xp: 300, check: (done, streak, allDone) => allDone && done > 0 },
-  { icon: "fa-solid fa-trophy", label: "Top Performer",  color: "#c47b00", xp: 400, check: (done, streak, allDone, isTop) => isTop },
-  { icon: "fa-solid fa-crown",  label: "Legendary",      color: "#27ae60", xp: 750, check: (done, streak) => streak >= 30 },
+  { icon: "fa-solid fa-fire",   label: "7-Day Streak",  color: "#e74c3c", xp: 200, desc: "Complete tasks 7 days in a row without missing a day.",            how: "Keep your daily streak alive for 7 consecutive days.",             check: (done, streak) => streak >= 7 },
+  { icon: "fa-solid fa-star",   label: "Task Master",   color: "#f0ad00", xp: 500, desc: "Complete a total of 50 tasks across your entire history.",          how: "Finish 50 tasks — any priority, any time.",                        check: (done)         => done >= 50  },
+  { icon: "fa-solid fa-medal",  label: "Perfect Week",  color: "#2386ff", xp: 300, desc: "Have all your assigned tasks completed with zero pending.",         how: "Make sure every task assigned to you is in Completed status.",     check: (done, streak, allDone) => allDone && done > 0 },
+  { icon: "fa-solid fa-trophy", label: "Top Performer", color: "#c47b00", xp: 400, desc: "Rank #1 among all users by having the highest completed task count.", how: "Complete more tasks than anyone else in the system.",              check: (done, streak, allDone, isTop) => isTop },
+  { icon: "fa-solid fa-crown",  label: "Legendary",     color: "#27ae60", xp: 750, desc: "Achieve an impressive 30-day task completion streak.",              how: "Complete at least one task every day for 30 days straight.",       check: (done, streak) => streak >= 30 },
 ];
 
 function getLevelInfo(totalXP) {
@@ -41,8 +42,42 @@ function computeGamification(session, myTasks, allUsers, allTasks) {
   return { earned, totalXP, ...getLevelInfo(totalXP), levelTitle: getLevelTitle(getLevelInfo(totalXP).level) };
 }
 
+function BadgeModal({ badge, earned, onClose }) {
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "rgba(0,0,0,0.4)" }} onClick={onClose}>
+      <div style={{ background: "#fff", borderRadius: 16, padding: 28, width: 320, boxShadow: "0 8px 40px rgba(0,0,0,0.18)", position: "relative" }} onClick={e => e.stopPropagation()}>
+        <button onClick={onClose} style={{ position: "absolute", top: 14, right: 16, background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#aaa" }}>×</button>
+
+        {/* Icon */}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 18 }}>
+          <div style={{ width: 72, height: 72, borderRadius: "50%", backgroundColor: badge.color + "20", border: `3px solid ${badge.color}55`, display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 12, opacity: earned ? 1 : 0.4 }}>
+            <i className={badge.icon} style={{ fontSize: 30, color: badge.color }} />
+          </div>
+          <p style={{ margin: 0, fontWeight: 900, fontSize: 17, color: "#1a1a1a" }}>{badge.label}</p>
+          <span style={{ marginTop: 6, fontSize: 12, fontWeight: 700, padding: "3px 12px", borderRadius: 20, backgroundColor: earned ? badge.color + "18" : "#f0f0f0", color: earned ? badge.color : "#aaa", border: `1px solid ${earned ? badge.color + "44" : "#e0e0e0"}` }}>
+            {earned ? `✓ Earned · +${badge.xp} XP` : `🔒 Locked · ${badge.xp} XP`}
+          </span>
+        </div>
+
+        {/* Description */}
+        <div style={{ marginBottom: 14 }}>
+          <p style={{ margin: "0 0 4px", fontSize: 11, fontWeight: 700, color: "#aaa", textTransform: "uppercase", letterSpacing: "0.5px" }}>About</p>
+          <p style={{ margin: 0, fontSize: 13, color: "#444", lineHeight: 1.6 }}>{badge.desc}</p>
+        </div>
+
+        {/* How to earn */}
+        <div style={{ backgroundColor: earned ? "#f0fdf4" : "#f8f9ff", border: `1px solid ${earned ? "#a8e6bf" : "#dde8fc"}`, borderRadius: 10, padding: "12px 14px" }}>
+          <p style={{ margin: "0 0 4px", fontSize: 11, fontWeight: 700, color: earned ? "#27ae60" : "#2386ff", textTransform: "uppercase", letterSpacing: "0.5px" }}>{earned ? "How you earned it" : "How to earn"}</p>
+          <p style={{ margin: 0, fontSize: 13, color: earned ? "#27ae60" : "#2386ff", lineHeight: 1.6 }}>{badge.how}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function GamificationPanel({ session, myTasks, allUsers, allTasks }) {
   const { earned, totalXP, level, currentXP, neededXP, progress, levelTitle } = computeGamification(session, myTasks, allUsers, allTasks);
+  const [selectedBadge, setSelectedBadge] = useState(null);
 
   return (
     <Card style={{ marginTop: 24, padding: 24 }}>
@@ -74,12 +109,14 @@ function GamificationPanel({ session, myTasks, allUsers, allTasks }) {
         {BADGES_DEF.map(b => {
           const isEarned = earned.includes(b);
           return (
-            <div key={b.label} title={`${b.label} · ${b.xp} XP`} style={{
+            <div key={b.label} onClick={() => setSelectedBadge(b)} title="Click for details" style={{
               display: "flex", alignItems: "center", gap: 7, padding: "7px 12px",
               borderRadius: 20, border: `1.5px solid ${isEarned ? b.color + "88" : "#e8e8e8"}`,
               backgroundColor: isEarned ? b.color + "15" : "#f8f8f8",
-              opacity: isEarned ? 1 : 0.45,
-            }}>
+              opacity: isEarned ? 1 : 0.55, cursor: "pointer", transition: "transform 0.1s",
+            }}
+            onMouseEnter={e => e.currentTarget.style.transform = "scale(1.04)"}
+            onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}>
               <i className={b.icon} style={{ color: isEarned ? b.color : "#ccc", fontSize: 13 }} />
               <span style={{ fontSize: 12, fontWeight: 700, color: isEarned ? b.color : "#bbb" }}>{b.label}</span>
               <span style={{ fontSize: 10, color: isEarned ? b.color : "#ccc", fontWeight: 600 }}>{isEarned ? `+${b.xp}` : `🔒${b.xp}`} XP</span>
@@ -87,6 +124,14 @@ function GamificationPanel({ session, myTasks, allUsers, allTasks }) {
           );
         })}
       </div>
+
+      {selectedBadge && (
+        <BadgeModal
+          badge={selectedBadge}
+          earned={earned.includes(selectedBadge)}
+          onClose={() => setSelectedBadge(null)}
+        />
+      )}
     </Card>
   );
 }
