@@ -2,6 +2,129 @@ import { SESSION } from "../constants/roles";
 import { DAYS, getWeekCounts } from "../utils/helpers";
 import { StatCard, Card, SectionTitle, PageHeader, WeekRow, Badge } from "../components/ui/index";
 
+// ── Gamification helpers ──────────────────────────────────────────────────────
+const BADGES_DEF = [
+  { icon: "fa-solid fa-fire",   label: "7-Day Streak",   color: "#e74c3c", xp: 200, check: (done, streak) => streak >= 7 },
+  { icon: "fa-solid fa-star",   label: "Task Master",    color: "#f0ad00", xp: 500, check: (done)         => done >= 50  },
+  { icon: "fa-solid fa-medal",  label: "Perfect Week",   color: "#2386ff", xp: 300, check: (done, streak, allDone) => allDone && done > 0 },
+  { icon: "fa-solid fa-trophy", label: "Top Performer",  color: "#c47b00", xp: 400, check: (done, streak, allDone, isTop) => isTop },
+  { icon: "fa-solid fa-crown",  label: "Legendary",      color: "#27ae60", xp: 750, check: (done, streak) => streak >= 30 },
+];
+
+function getLevelInfo(totalXP) {
+  let level = 1, accumulated = 0;
+  while (true) {
+    const needed = 500 + (level - 1) * 100;
+    if (accumulated + needed > totalXP) return { level, currentXP: totalXP - accumulated, neededXP: needed, progress: Math.round(((totalXP - accumulated) / needed) * 100) };
+    accumulated += needed;
+    level++;
+  }
+}
+
+const LEVEL_TITLES = ["Newcomer","Beginner","Rising Star","Achiever","Expert","Elite","Master","Champion","Legend","Mythic"];
+const getLevelTitle = level => LEVEL_TITLES[Math.min(level - 1, LEVEL_TITLES.length - 1)];
+
+function computeGamification(session, myTasks, allUsers, allTasks) {
+  const done    = myTasks.filter(t => t.status === "Completed").length;
+  const streak  = session.streak || 0;
+  const allDone = myTasks.length > 0 && myTasks.every(t => t.status === "Completed");
+
+  // top performer: highest done count among all users
+  const topDone = Math.max(0, ...allUsers.filter(u => u.role === "user").map(u => {
+    const names = n => { const r = n.assignedTo ?? n.assigned_to; return Array.isArray(r) ? r : (r ? [r] : []); };
+    return allTasks.filter(t => names(t).includes(u.name) && t.status === "Completed").length;
+  }));
+  const isTop = done > 0 && done >= topDone;
+
+  const earned  = BADGES_DEF.filter(b => b.check(done, streak, allDone, isTop));
+  const totalXP = earned.reduce((s, b) => s + b.xp, 0);
+  return { earned, totalXP, ...getLevelInfo(totalXP), levelTitle: getLevelTitle(getLevelInfo(totalXP).level) };
+}
+
+function GamificationPanel({ session, myTasks, allUsers, allTasks }) {
+  const { earned, totalXP, level, currentXP, neededXP, progress, levelTitle } = computeGamification(session, myTasks, allUsers, allTasks);
+
+  return (
+    <Card style={{ marginTop: 24, padding: 24 }}>
+      <SectionTitle icon="🏆">Your Progress</SectionTitle>
+
+      {/* Level bar */}
+      <div style={{ background: "linear-gradient(135deg,#1a1a2e,#0f3460)", borderRadius: 12, padding: "16px 20px", display: "flex", alignItems: "center", gap: 16, marginBottom: 20 }}>
+        <div style={{ width: 56, height: 56, borderRadius: "50%", background: "linear-gradient(135deg,#f0ad00,#e74c3c)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <span style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.8)", letterSpacing: 1 }}>LVL</span>
+          <span style={{ fontSize: 20, fontWeight: 900, color: "#fff", lineHeight: 1 }}>{level}</span>
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+            <span style={{ fontWeight: 800, fontSize: 14, color: "#fff" }}>{levelTitle}</span>
+            <span style={{ fontSize: 12, color: "rgba(255,255,255,0.6)" }}>{currentXP}/{neededXP} XP</span>
+          </div>
+          <div style={{ height: 8, borderRadius: 4, background: "rgba(255,255,255,0.15)", overflow: "hidden" }}>
+            <div style={{ height: "100%", width: `${progress}%`, borderRadius: 4, background: "linear-gradient(90deg,#f0ad00,#e74c3c)", transition: "width 0.5s" }} />
+          </div>
+          <p style={{ margin: "5px 0 0", fontSize: 11, color: "rgba(255,255,255,0.5)" }}>{totalXP} total XP · {neededXP - currentXP} XP to Level {level + 1}</p>
+        </div>
+      </div>
+
+      {/* Badges */}
+      <p style={{ margin: "0 0 10px", fontSize: 11, fontWeight: 700, color: "#aaa", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+        Badges — {earned.length}/{BADGES_DEF.length} earned
+      </p>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+        {BADGES_DEF.map(b => {
+          const isEarned = earned.includes(b);
+          return (
+            <div key={b.label} title={`${b.label} · ${b.xp} XP`} style={{
+              display: "flex", alignItems: "center", gap: 7, padding: "7px 12px",
+              borderRadius: 20, border: `1.5px solid ${isEarned ? b.color + "88" : "#e8e8e8"}`,
+              backgroundColor: isEarned ? b.color + "15" : "#f8f8f8",
+              opacity: isEarned ? 1 : 0.45,
+            }}>
+              <i className={b.icon} style={{ color: isEarned ? b.color : "#ccc", fontSize: 13 }} />
+              <span style={{ fontSize: 12, fontWeight: 700, color: isEarned ? b.color : "#bbb" }}>{b.label}</span>
+              <span style={{ fontSize: 10, color: isEarned ? b.color : "#ccc", fontWeight: 600 }}>{isEarned ? `+${b.xp}` : `🔒${b.xp}`} XP</span>
+            </div>
+          );
+        })}
+      </div>
+    </Card>
+  );
+}
+
+function TeamGamificationPanel({ session, users, tasks }) {
+  const members = users.filter(u => u.team === session.team && u.role === "user");
+  const getNames = t => { const r = t.assignedTo ?? t.assigned_to; return Array.isArray(r) ? r : (r ? [r] : []); };
+
+  const ranked = members.map(u => {
+    const mt   = tasks.filter(t => getNames(t).includes(u.name));
+    const done = mt.filter(t => t.status === "Completed").length;
+    const { level, levelTitle, totalXP } = computeGamification({ streak: u.streak || 0 }, mt, users, tasks);
+    return { user: u, done, level, levelTitle, totalXP };
+  }).sort((a, b) => b.totalXP - a.totalXP);
+
+  return (
+    <Card style={{ marginTop: 24, padding: 24 }}>
+      <SectionTitle icon="🏆">Team Progress</SectionTitle>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {ranked.map(({ user, done, level, levelTitle, totalXP }, i) => (
+          <div key={user.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderRadius: 10, backgroundColor: i === 0 ? "#fffdf0" : "#fafafa", border: `1px solid ${i === 0 ? "#f5e090" : "#f0f0f0"}` }}>
+            <span style={{ fontSize: 13, fontWeight: 900, color: i === 0 ? "#f0ad00" : "#bbb", width: 18, textAlign: "center" }}>{i + 1}</span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ margin: 0, fontWeight: 700, fontSize: 13, color: "#1a1a1a" }}>{user.name}</p>
+              <p style={{ margin: "1px 0 0", fontSize: 11, color: "#888" }}>Lv.{level} {levelTitle} · {done} tasks done</p>
+            </div>
+            <div style={{ textAlign: "right" }}>
+              <p style={{ margin: 0, fontSize: 15, fontWeight: 900, color: "#b07d00" }}>{totalXP}</p>
+              <p style={{ margin: 0, fontSize: 9, color: "#aaa", fontWeight: 600 }}>XP</p>
+            </div>
+          </div>
+        ))}
+        {ranked.length === 0 && <p style={{ color: "#bbb", fontSize: 13, textAlign: "center", padding: 20 }}>No team members found.</p>}
+      </div>
+    </Card>
+  );
+}
+
 // ── Same helper as TasksPage — handles array, JSON string, or comma-separated ──
 const getNames = t => {
   const raw = t.assignedTo ?? t.assigned_to ?? null;
@@ -534,6 +657,13 @@ export function DashboardPage({ role, tasks, users, sessionData }) {
       <div style={{ marginTop: 24 }}>
         <DashboardAttention role={role} tasks={scoped} users={users} session={session} />
       </div>
+
+      {role === "user" && (
+        <GamificationPanel session={session} myTasks={myTasks} allUsers={users} allTasks={tasks} />
+      )}
+      {role === "team_leader" && (
+        <TeamGamificationPanel session={session} users={users} tasks={tasks} />
+      )}
     </div>
   );
 }

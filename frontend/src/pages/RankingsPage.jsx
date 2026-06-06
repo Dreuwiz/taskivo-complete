@@ -3,6 +3,41 @@ import { ROLES } from "../constants/roles";
 import { Avatar, Card, PageHeader } from "../components/ui/index";
 import { POINTS_BY_PRIORITY, PRIORITY_STYLE, STATUS_STYLE, calcPoints } from "../utils/helpers";
 
+const BADGES_DEF = [
+  { icon: "fa-solid fa-fire",   label: "7-Day Streak",  color: "#e74c3c", xp: 200, check: (done, streak) => streak >= 7 },
+  { icon: "fa-solid fa-star",   label: "Task Master",   color: "#f0ad00", xp: 500, check: (done)         => done >= 50  },
+  { icon: "fa-solid fa-medal",  label: "Perfect Week",  color: "#2386ff", xp: 300, check: (done, streak, allDone) => allDone && done > 0 },
+  { icon: "fa-solid fa-trophy", label: "Top Performer", color: "#c47b00", xp: 400, check: (done, streak, allDone, isTop) => isTop },
+  { icon: "fa-solid fa-crown",  label: "Legendary",     color: "#27ae60", xp: 750, check: (done, streak) => streak >= 30 },
+];
+
+function getLevelInfo(totalXP) {
+  let level = 1, accumulated = 0;
+  while (true) {
+    const needed = 500 + (level - 1) * 100;
+    if (accumulated + needed > totalXP) return { level, currentXP: totalXP - accumulated, neededXP: needed };
+    accumulated += needed;
+    level++;
+  }
+}
+
+const LEVEL_TITLES = ["Newcomer","Beginner","Rising Star","Achiever","Expert","Elite","Master","Champion","Legend","Mythic"];
+const getLevelTitle = level => LEVEL_TITLES[Math.min(level - 1, LEVEL_TITLES.length - 1)];
+
+function getUserXP(user, tasks, allUsers) {
+  const getNames = t => { const r = t.assignedTo ?? t.assigned_to; return Array.isArray(r) ? r : (r ? [r] : []); };
+  const myTasks = tasks.filter(t => getNames(t).includes(user.name));
+  const done    = myTasks.filter(t => t.status === "Completed").length;
+  const streak  = user.streak || 0;
+  const allDone = myTasks.length > 0 && myTasks.every(t => t.status === "Completed");
+  const topDone = Math.max(0, ...allUsers.filter(u => u.role === "user").map(u2 => tasks.filter(t => getNames(t).includes(u2.name) && t.status === "Completed").length));
+  const isTop   = done > 0 && done >= topDone;
+  const earned  = BADGES_DEF.filter(b => b.check(done, streak, allDone, isTop));
+  const totalXP = earned.reduce((s, b) => s + b.xp, 0);
+  const { level } = getLevelInfo(totalXP);
+  return { totalXP, level, levelTitle: getLevelTitle(level), earnedBadges: earned };
+}
+
 const isTaskAssignedToUser = (task, user) => {
   const ids = Array.isArray(task.assignedUserIds)
     ? task.assignedUserIds
@@ -27,9 +62,10 @@ function RankBadge({ rank }) {
   );
 }
 
-function MemberRow({ rank, user, points, tasks, onClick }) {
+function MemberRow({ rank, user, points, tasks, allUsers, onClick }) {
   const ut   = tasks.filter(t => isTaskAssignedToUser(t, user));
   const done = ut.filter(t => t.status === "Completed").length;
+  const { totalXP, level, levelTitle, earnedBadges } = getUserXP(user, tasks, allUsers);
   return (
     <div
       onClick={onClick}
@@ -51,10 +87,19 @@ function MemberRow({ rank, user, points, tasks, onClick }) {
         <p style={{ margin: 0, fontSize: 11, color: "#aaa" }}>
           {user.team ? `Team ${user.team}` : ROLES[user.role]?.label} · {done}/{ut.length} tasks done
         </p>
+        <div style={{ display: "flex", gap: 4, marginTop: 4, flexWrap: "wrap" }}>
+          {earnedBadges.map(b => (
+            <span key={b.label} title={b.label} style={{ fontSize: 10, padding: "1px 7px", borderRadius: 20, backgroundColor: b.color + "18", color: b.color, fontWeight: 700, border: `1px solid ${b.color}44` }}>
+              <i className={b.icon} style={{ marginRight: 3 }} />{b.label}
+            </span>
+          ))}
+        </div>
       </div>
-      <div style={{ textAlign: "right" }}>
-        <p style={{ margin: 0, fontSize: 20, fontWeight: 900, color: "#b07d00" }}>{points}</p>
-        <p style={{ margin: 0, fontSize: 10, color: "#aaa", fontWeight: 600 }}>POINTS</p>
+      <div style={{ textAlign: "right", flexShrink: 0 }}>
+        <p style={{ margin: 0, fontSize: 18, fontWeight: 900, color: "#b07d00" }}>{points}</p>
+        <p style={{ margin: 0, fontSize: 9, color: "#aaa", fontWeight: 600 }}>POINTS</p>
+        <p style={{ margin: "4px 0 0", fontSize: 11, fontWeight: 700, color: "#694AD7" }}>Lv.{level} {levelTitle}</p>
+        <p style={{ margin: 0, fontSize: 10, color: "#aaa" }}>{totalXP} XP</p>
       </div>
     </div>
   );
@@ -220,6 +265,7 @@ export function RankingsPage({ users, tasks }) {
                   user={user}
                   points={points}
                   tasks={tasks}
+                  allUsers={staffUsers}
                   onClick={() => setSelectedMember(user)}
                 />
               ))
@@ -277,6 +323,7 @@ export function RankingsPage({ users, tasks }) {
                   user={user}
                   points={points}
                   tasks={tasks}
+                  allUsers={staffUsers}
                   onClick={() => setSelectedMember(user)}
                 />
               ))}
@@ -298,6 +345,7 @@ export function RankingsPage({ users, tasks }) {
               user={user}
               points={points}
               tasks={tasks}
+              allUsers={staffUsers}
               onClick={() => setSelectedMember(user)}
             />
           ))}
