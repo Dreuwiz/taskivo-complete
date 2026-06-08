@@ -301,6 +301,12 @@ function TLAssignmentPanel({ task, session, users, onAssigned }) {
 
 // ── TaskDetailPanel ───────────────────────────────────────────────────────────
 function TaskDetailPanel({ task, role, session, onClose, onUpdateTask, users }) {
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 600);
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth <= 600);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
   const subtasks  = getSubs(task);
   const assignees = getNames(task);
   const myName    = session.name;
@@ -375,17 +381,30 @@ function TaskDetailPanel({ task, role, session, onClose, onUpdateTask, users }) 
   };
 
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 900, display: "flex" }} onClick={onClose}>
-      <div style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.25)" }} />
+    <div style={{ position: "fixed", inset: 0, zIndex: 900, display: "flex", flexDirection: isMobile ? "column" : "row" }} onClick={onClose}>
+      {!isMobile && <div style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.25)" }} />}
+      {isMobile && <div style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.25)", minHeight: 60 }} />}
       <div
         style={{
-          width: 460, backgroundColor: "white", height: "100vh", overflowY: "auto",
-          boxShadow: "-4px 0 24px rgba(0,0,0,0.12)", display: "flex", flexDirection: "column",
+          width: isMobile ? "100%" : 460,
+          maxHeight: isMobile ? "90vh" : "100vh",
+          height: isMobile ? "auto" : "100vh",
+          backgroundColor: "white",
+          overflowY: "auto",
+          boxShadow: isMobile ? "0 -4px 24px rgba(0,0,0,0.15)" : "-4px 0 24px rgba(0,0,0,0.12)",
+          display: "flex", flexDirection: "column",
+          borderRadius: isMobile ? "16px 16px 0 0" : 0,
         }}
         onClick={e => e.stopPropagation()}
       >
+        {/* Mobile drag handle */}
+        {isMobile && (
+          <div style={{ display: "flex", justifyContent: "center", padding: "10px 0 4px" }}>
+            <div style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: "#ddd" }} />
+          </div>
+        )}
         {/* Header */}
-        <div style={{ padding: "22px 24px 16px", borderBottom: "1px solid #f0f0f0" }}>
+        <div style={{ padding: isMobile ? "12px 16px 12px" : "22px 24px 16px", borderBottom: "1px solid #f0f0f0" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
             <h2 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: "#1a1a1a", lineHeight: 1.3 }}>
               {task.title}
@@ -431,7 +450,7 @@ function TaskDetailPanel({ task, role, session, onClose, onUpdateTask, users }) 
           )}
         </div>
 
-        <div style={{ padding: "20px 24px", flex: 1 }}>
+        <div style={{ padding: isMobile ? "12px 16px" : "20px 24px", flex: 1 }}>
 
           {/* ── TL assignment panel ── */}
           {isTeamLeader && tlPending && (
