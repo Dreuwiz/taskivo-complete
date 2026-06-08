@@ -251,16 +251,25 @@ export function ChatBot({ role = "team_member" }) {
     }]);
   }
 
+  const isMobile = typeof window !== "undefined" && window.innerWidth <= 480;
+
   return (
     <>
       {open && (
         <div style={{
-          position: "fixed", bottom: 88, right: 24, zIndex: 9999,
-          width: 360, height: 520,
-          background: "#fff", borderRadius: 16,
+          position: "fixed",
+          bottom: isMobile ? 0 : 88,
+          right: isMobile ? 0 : 24,
+          left: isMobile ? 0 : "auto",
+          top: isMobile ? 0 : "auto",
+          zIndex: 9999,
+          width: isMobile ? "100%" : 360,
+          height: isMobile ? "100%" : 520,
+          background: "#fff",
+          borderRadius: isMobile ? 0 : 16,
           boxShadow: "0 8px 40px rgba(0,0,0,0.18)",
           display: "flex", flexDirection: "column",
-          overflow: "hidden", border: "1px solid #ececec",
+          overflow: "hidden", border: isMobile ? "none" : "1px solid #ececec",
         }}>
 
           {/* Header */}
