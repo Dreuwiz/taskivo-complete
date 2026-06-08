@@ -251,7 +251,13 @@ export function ChatBot({ role = "team_member" }) {
     }]);
   }
 
-  const isMobile = typeof window !== "undefined" && window.innerWidth <= 480;
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 480);
+
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth <= 480);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
 
   return (
     <>
@@ -429,13 +435,18 @@ export function ChatBot({ role = "team_member" }) {
       <button
         onClick={() => setOpen(o => !o)}
         style={{
-          position: "fixed", bottom: 24, right: 24, zIndex: 9999,
-          width: 56, height: 56, borderRadius: "50%",
+          position: "fixed",
+          bottom: isMobile ? 16 : 24,
+          right: isMobile ? 16 : 24,
+          zIndex: 9999,
+          width: isMobile ? 48 : 56,
+          height: isMobile ? 48 : 56,
+          borderRadius: "50%",
           background: "linear-gradient(135deg, #694AD7, #0f3460)",
           border: "none", cursor: "pointer",
           display: "flex", alignItems: "center", justifyContent: "center",
           boxShadow: "0 4px 20px rgba(105,74,215,0.45)",
-          fontSize: 22, color: "#fff", transition: "transform 0.2s",
+          fontSize: isMobile ? 18 : 22, color: "#fff", transition: "transform 0.2s",
         }}
         onMouseEnter={e => e.currentTarget.style.transform = "scale(1.1)"}
         onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
