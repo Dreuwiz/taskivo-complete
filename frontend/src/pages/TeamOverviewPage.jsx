@@ -28,14 +28,21 @@ function MemberTaskDrawer({ member, tasks, onClose }) {
   const pending   = memberTasks.filter(t => t.status === "Pending").length;
   const reviewing = memberTasks.filter(t => t.status === "Under Review").length;
 
+  const isMobile = window.innerWidth <= 520;
+
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 900, display: "flex" }} onClick={onClose}>
-      <div style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.25)" }} />
+      {!isMobile && <div style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.25)" }} />}
+      {isMobile && <div style={{ position: "absolute", inset: 0, backgroundColor: "rgba(0,0,0,0.25)" }} />}
       <div
-        className="member-drawer"
         style={{
+          position: isMobile ? "absolute" : "relative",
+          top: isMobile ? 0 : undefined,
+          right: isMobile ? 0 : undefined,
+          width: isMobile ? "100vw" : 460,
           backgroundColor: "white", height: "100vh", overflowY: "auto",
           boxShadow: "-4px 0 24px rgba(0,0,0,0.12)", display: "flex", flexDirection: "column",
+          zIndex: 1,
         }}
         onClick={e => e.stopPropagation()}
       >
