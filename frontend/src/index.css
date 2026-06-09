@@ -338,3 +338,14 @@ button { font-family: inherit; }
     font-size: 11px !important;
   }
 }
+
+/* Member Task Drawer — responsive side panel */
+.member-drawer {
+  width: 460px;
+}
+
+@media (max-width: 520px) {
+  .member-drawer {
+    width: 100vw;
+  }
+}

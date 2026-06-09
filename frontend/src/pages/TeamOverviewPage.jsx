@@ -32,8 +32,9 @@ function MemberTaskDrawer({ member, tasks, onClose }) {
     <div style={{ position: "fixed", inset: 0, zIndex: 900, display: "flex" }} onClick={onClose}>
       <div style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.25)" }} />
       <div
+        className="member-drawer"
         style={{
-          width: 460, backgroundColor: "white", height: "100vh", overflowY: "auto",
+          backgroundColor: "white", height: "100vh", overflowY: "auto",
           boxShadow: "-4px 0 24px rgba(0,0,0,0.12)", display: "flex", flexDirection: "column",
         }}
         onClick={e => e.stopPropagation()}
@@ -227,24 +228,26 @@ export function TeamOverviewPage({ role, tasks, users, onUpdateTask }) {
               ? t.assignedTo
               : [t.assignedTo ?? t.assigned_to].filter(Boolean);
             return (
-              <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", borderBottom: "1px solid #f5f5f5" }}>
-                <div style={{ flex: 1 }}>
+              <div key={t.id} style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "10px 0", borderBottom: "1px solid #f5f5f5", flexWrap: "wrap" }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
                   <p style={{ margin: 0, fontWeight: 600, fontSize: 14 }}>{t.title}</p>
                   <p style={{ margin: 0, fontSize: 12, color: "#888" }}>
                     {assignees.join(", ") || "Unassigned"} — due {t.due || "—"}
                   </p>
                 </div>
-                <Badge label="Under Review" style={{ backgroundColor: "#fff8e0", color: "#c47b00" }} />
-                <button
-                  onClick={() => handleApprove(t)}
-                  style={{ background: "#e6f9ed", border: "1px solid #a8e6bf", borderRadius: 6, padding: "5px 12px", fontSize: 12, fontWeight: 600, color: "#27ae60", cursor: "pointer" }}>
-                  ✓ Approve
-                </button>
-                <button
-                  onClick={() => setRejectTarget(t)}
-                  style={{ background: "#fdecea", border: "1px solid #f5c6c2", borderRadius: 6, padding: "5px 12px", fontSize: 12, fontWeight: 600, color: "#c0392b", cursor: "pointer" }}>
-                  Reject
-                </button>
+                <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap", flexShrink: 0 }}>
+                  <Badge label="Under Review" style={{ backgroundColor: "#fff8e0", color: "#c47b00" }} />
+                  <button
+                    onClick={() => handleApprove(t)}
+                    style={{ background: "#e6f9ed", border: "1px solid #a8e6bf", borderRadius: 6, padding: "5px 12px", fontSize: 12, fontWeight: 600, color: "#27ae60", cursor: "pointer" }}>
+                    ✓ Approve
+                  </button>
+                  <button
+                    onClick={() => setRejectTarget(t)}
+                    style={{ background: "#fdecea", border: "1px solid #f5c6c2", borderRadius: 6, padding: "5px 12px", fontSize: 12, fontWeight: 600, color: "#c0392b", cursor: "pointer" }}>
+                    Reject
+                  </button>
+                </div>
               </div>
             );
           })}
