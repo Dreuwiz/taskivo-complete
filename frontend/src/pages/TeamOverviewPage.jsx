@@ -31,16 +31,17 @@ function MemberTaskDrawer({ member, tasks, onClose }) {
   const isMobile = window.innerWidth <= 520;
 
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 900, display: "flex" }} onClick={onClose}>
+    <div style={{ position: "fixed", inset: 0, zIndex: 1100, display: "flex" }} onClick={onClose}>
       {!isMobile && <div style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.25)" }} />}
       {isMobile && <div style={{ position: "absolute", inset: 0, backgroundColor: "rgba(0,0,0,0.25)" }} />}
       <div
         style={{
-          position: isMobile ? "absolute" : "relative",
-          top: isMobile ? 0 : undefined,
-          right: isMobile ? 0 : undefined,
+          position: "absolute",
+          top: isMobile ? 60 : 0,
+          right: 0,
           width: isMobile ? "100vw" : 460,
-          backgroundColor: "white", height: "100vh", overflowY: "auto",
+          height: isMobile ? "calc(100vh - 60px)" : "100vh",
+          backgroundColor: "white", overflowY: "auto",
           boxShadow: "-4px 0 24px rgba(0,0,0,0.12)", display: "flex", flexDirection: "column",
           zIndex: 1,
         }}
