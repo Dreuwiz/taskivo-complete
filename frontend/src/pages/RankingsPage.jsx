@@ -115,7 +115,7 @@ function MemberDetailDrawer({ user, tasks, onClose }) {
     <div style={{ position: "fixed", inset: 0, zIndex: 900, display: "flex" }} onClick={onClose}>
       <div style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.25)" }} />
       <div
-        style={{ width: 460, backgroundColor: "white", height: "100vh", overflowY: "auto", boxShadow: "-4px 0 24px rgba(0,0,0,0.12)", display: "flex", flexDirection: "column" }}
+        style={{ width: "clamp(320px, 100vw - 20px, 460px)", backgroundColor: "white", height: "100vh", overflowY: "auto", boxShadow: "-4px 0 24px rgba(0,0,0,0.12)", display: "flex", flexDirection: "column" }}
         onClick={e => e.stopPropagation()}
       >
         <div style={{ padding: "22px 24px 16px", borderBottom: "1px solid #f0f0f0" }}>
