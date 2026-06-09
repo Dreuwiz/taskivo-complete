@@ -40,45 +40,45 @@ function MemberTaskDrawer({ member, tasks, onClose }) {
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div style={{ padding: "22px 24px 16px", borderBottom: "1px solid #f0f0f0" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-            <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
-              <Avatar initials={member.avatar} color={ROLES[member.role]?.color || "#888"} size={44} />
-              <div>
-                <p style={{ margin: 0, fontWeight: 800, fontSize: 16, color: "#1a1a1a" }}>{member.name}</p>
-                <p style={{ margin: "2px 0 0", fontSize: 12, color: "#888" }}>{member.email}</p>
+        <div style={{ padding: "16px", borderBottom: "1px solid #f0f0f0" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
+            <div style={{ display: "flex", gap: 12, alignItems: "center", minWidth: 0 }}>
+              <Avatar initials={member.avatar} color={ROLES[member.role]?.color || "#888"} size={40} />
+              <div style={{ minWidth: 0 }}>
+                <p style={{ margin: 0, fontWeight: 800, fontSize: 15, color: "#1a1a1a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{member.name}</p>
+                <p style={{ margin: "2px 0 0", fontSize: 11, color: "#888", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{member.email}</p>
               </div>
             </div>
-            <button onClick={onClose} style={{ background: "none", border: "none", fontSize: 22, cursor: "pointer", color: "#aaa" }}>×</button>
+            <button onClick={onClose} style={{ background: "none", border: "none", fontSize: 22, cursor: "pointer", color: "#aaa", flexShrink: 0, paddingLeft: 8 }}>×</button>
           </div>
 
-          {/* Points + stats row */}
-          <div style={{ display: "flex", gap: 10, marginTop: 16, flexWrap: "wrap" }}>
-            <div style={{ padding: "8px 14px", borderRadius: 10, backgroundColor: "#fff8e0", border: "1px solid #f5e090", textAlign: "center", flex: 1 }}>
-              <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: "#b07d00", textTransform: "uppercase" }}>Points</p>
-              <p style={{ margin: "2px 0 0", fontSize: 22, fontWeight: 900, color: "#b07d00" }}>{points}</p>
+          {/* Stats grid — 2x2 on mobile */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+            <div style={{ padding: "8px 10px", borderRadius: 10, backgroundColor: "#fff8e0", border: "1px solid #f5e090", textAlign: "center" }}>
+              <p style={{ margin: 0, fontSize: 10, fontWeight: 700, color: "#b07d00", textTransform: "uppercase" }}>Points</p>
+              <p style={{ margin: "2px 0 0", fontSize: 20, fontWeight: 900, color: "#b07d00" }}>{points}</p>
             </div>
-            <div style={{ padding: "8px 14px", borderRadius: 10, backgroundColor: "#e6f9ed", border: "1px solid #a8e6bf", textAlign: "center", flex: 1 }}>
-              <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: "#27ae60", textTransform: "uppercase" }}>Completed</p>
-              <p style={{ margin: "2px 0 0", fontSize: 22, fontWeight: 900, color: "#27ae60" }}>{done}</p>
+            <div style={{ padding: "8px 10px", borderRadius: 10, backgroundColor: "#e6f9ed", border: "1px solid #a8e6bf", textAlign: "center" }}>
+              <p style={{ margin: 0, fontSize: 10, fontWeight: 700, color: "#27ae60", textTransform: "uppercase" }}>Completed</p>
+              <p style={{ margin: "2px 0 0", fontSize: 20, fontWeight: 900, color: "#27ae60" }}>{done}</p>
             </div>
-            <div style={{ padding: "8px 14px", borderRadius: 10, backgroundColor: "#ede9fc", border: "1px solid #c5b8f5", textAlign: "center", flex: 1 }}>
-              <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: "#694AD7", textTransform: "uppercase" }}>In Progress</p>
-              <p style={{ margin: "2px 0 0", fontSize: 22, fontWeight: 900, color: "#694AD7" }}>{inProg}</p>
+            <div style={{ padding: "8px 10px", borderRadius: 10, backgroundColor: "#ede9fc", border: "1px solid #c5b8f5", textAlign: "center" }}>
+              <p style={{ margin: 0, fontSize: 10, fontWeight: 700, color: "#694AD7", textTransform: "uppercase" }}>In Progress</p>
+              <p style={{ margin: "2px 0 0", fontSize: 20, fontWeight: 900, color: "#694AD7" }}>{inProg}</p>
             </div>
-            <div style={{ padding: "8px 14px", borderRadius: 10, backgroundColor: "#f0f0f0", border: "1px solid #ddd", textAlign: "center", flex: 1 }}>
-              <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: "#888", textTransform: "uppercase" }}>Pending</p>
-              <p style={{ margin: "2px 0 0", fontSize: 22, fontWeight: 900, color: "#888" }}>{pending + reviewing}</p>
+            <div style={{ padding: "8px 10px", borderRadius: 10, backgroundColor: "#f0f0f0", border: "1px solid #ddd", textAlign: "center" }}>
+              <p style={{ margin: 0, fontSize: 10, fontWeight: 700, color: "#888", textTransform: "uppercase" }}>Pending</p>
+              <p style={{ margin: "2px 0 0", fontSize: 20, fontWeight: 900, color: "#888" }}>{pending + reviewing}</p>
             </div>
           </div>
         </div>
 
         {/* Filter tabs */}
-        <div style={{ padding: "12px 24px", borderBottom: "1px solid #f0f0f0", display: "flex", gap: 6, flexWrap: "wrap" }}>
+        <div style={{ padding: "10px 16px", borderBottom: "1px solid #f0f0f0", display: "flex", gap: 6, flexWrap: "wrap" }}>
           {["All", "Pending", "In Progress", "Under Review", "Completed"].map(s => (
             <button key={s} onClick={() => setStatusFilter(s)}
               style={{
-                padding: "5px 12px", borderRadius: 20, border: "1px solid", fontSize: 11, fontWeight: 600, cursor: "pointer",
+                padding: "5px 10px", borderRadius: 20, border: "1px solid", fontSize: 11, fontWeight: 600, cursor: "pointer",
                 borderColor: statusFilter === s ? "#694AD7" : "#ddd",
                 backgroundColor: statusFilter === s ? "#694AD7" : "white",
                 color: statusFilter === s ? "white" : "#666",
@@ -89,7 +89,7 @@ function MemberTaskDrawer({ member, tasks, onClose }) {
         </div>
 
         {/* Task list */}
-        <div style={{ padding: "16px 24px", flex: 1 }}>
+        <div style={{ padding: "12px 16px", flex: 1 }}>
           {filtered.length === 0 ? (
             <p style={{ color: "#bbb", fontSize: 13, fontStyle: "italic", textAlign: "center", marginTop: 32 }}>No tasks found.</p>
           ) : (
